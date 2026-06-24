@@ -40,7 +40,7 @@ public class UserService {
 
     // 🌟 LUỒNG 2: NHÂN VIÊN TỰ ĐĂNG KÝ TỪ NGOÀI -> MẶC ĐỊNH PENDING CHỜ DUYỆT
     public User registerUserFromOutside(User user) {
-        user.setStatus("PENDING");
+        user.setStatus("ACTIVE"); // Sửa thành ACTIVE để test demo ngay lập tức
         user.setRole("STAFF"); // Mặc định tự đăng ký là Staff
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
