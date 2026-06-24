@@ -173,7 +173,9 @@
             });
 
             function fetchPageData(url, targetId) {
-                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+                const sep = url.includes('?') ? '&' : '?';
+                const noCacheUrl = url + sep + '_t=' + Date.now();
+                fetch(noCacheUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
                     .then(response => response.text())
                     .then(html => {
                         const container = document.getElementById(targetId);
@@ -216,7 +218,9 @@
         async function reloadTableData(containerId) {
             try {
                 const url = window.location.href;
-                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' });
+                const sep = url.includes('?') ? '&' : '?';
+                const noCacheUrl = url + sep + '_t=' + Date.now();
+                const res = await fetch(noCacheUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' });
                 if (res.ok) {
                     const html = await res.text();
                     const temp = document.createElement('div');
