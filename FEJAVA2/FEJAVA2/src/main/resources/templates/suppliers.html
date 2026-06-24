@@ -175,7 +175,7 @@
                     });
 
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('crudModal')).hide();
                         if(typeof showSuccessToast === "function") showSuccessToast("Đã lưu thông tin nhà cung cấp!");
 
                         const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
@@ -202,7 +202,7 @@
                 try {
                     const response = await fetch(`/suppliers/delete/${id}`, { method: 'DELETE' });
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal')).hide();
                         if(typeof showSuccessToast === "function") showSuccessToast("Đã xóa nhà cung cấp thành công!");
                         const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
                         if (activePageBtn) activePageBtn.click();

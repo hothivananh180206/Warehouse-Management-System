@@ -352,7 +352,7 @@
                     });
 
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('crudModal')).hide();
                         if(typeof showSuccessToast === "function") showSuccessToast("Đã tạo tài khoản ACTIVE thành công!");
                         const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
                         if (activePageBtn) activePageBtn.click(); else reloadTableData('user-data-container');
@@ -376,7 +376,7 @@
                 try {
                     const response = await fetch(`/users/delete/${id}`, { method: 'DELETE' });
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal')).hide();
                         // Ẩn luôn Offcanvas nếu đang mở
                         const offcanvasEl = document.getElementById('pendingOffcanvas');
                         if(offcanvasEl) {
@@ -404,7 +404,7 @@
                 try {
                     const response = await fetch(`/users/lock/${id}`, { method: 'PUT' });
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('lockModal')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('lockModal')).hide();
                         if(typeof showSuccessToast === "function") showSuccessToast("Tài khoản đã bị Vô hiệu hóa!");
                         const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
                         if (activePageBtn) activePageBtn.click(); else reloadTableData('user-data-container');
@@ -426,7 +426,7 @@
                 try {
                     const response = await fetch(`/users/unlock/${id}`, { method: 'PUT' });
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('unlockModal')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('unlockModal')).hide();
                         if(typeof showSuccessToast === "function") showSuccessToast("Đã ân xá tài khoản thành công!");
                         const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
                         if (activePageBtn) activePageBtn.click(); else reloadTableData('user-data-container');
@@ -448,7 +448,7 @@
                 try {
                     const response = await fetch(`/users/approve/${id}`, { method: 'PUT' });
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('approveModal')).hide();
                         // Ẩn luôn Offcanvas nếu đang mở
                         const offcanvasEl = document.getElementById('pendingOffcanvas');
                         if(offcanvasEl) {

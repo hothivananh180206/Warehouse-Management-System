@@ -178,7 +178,7 @@
                     });
 
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('crudModal')).hide();
                         showSuccessToast("Đã lưu thông tin khách hàng thành công!"); // Hàm gọi từ scripts.html
 
                         const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
@@ -205,7 +205,7 @@
                 try {
                     const response = await fetch(`/customers/delete/${id}`, { method: 'DELETE' });
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal')).hide();
                         showSuccessToast("Đã xóa khách hàng khỏi hệ thống!");
                         const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
                         if (activePageBtn) activePageBtn.click();

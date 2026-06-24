@@ -140,7 +140,7 @@
                     });
 
                     if (response.ok) {
-                        const modalObj = bootstrap.Modal.getInstance(document.getElementById('crudModal'));
+                        const modalObj = bootstrap.Modal.getOrCreateInstance(document.getElementById('crudModal'));
                         if (modalObj) modalObj.hide();
                         else document.getElementById('crudModal').classList.remove('show');
                         if(typeof showSuccessToast === "function") showSuccessToast("Đã lưu danh mục!");
@@ -166,7 +166,7 @@
                 try {
                     const response = await fetch(`/categories/delete/${id}`, { method: 'DELETE' });
                     if (response.ok) {
-                        const modalObj = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                        const modalObj = bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal'));
                         if (modalObj) modalObj.hide();
                         else document.getElementById('deleteModal').classList.remove('show');
                         if(typeof showSuccessToast === "function") showSuccessToast("Đã xóa danh mục!");

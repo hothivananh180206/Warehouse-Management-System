@@ -415,7 +415,7 @@
                     if (response.ok) {
                         const myModalEl = document.getElementById('crudModal');
                         if (myModalEl) {
-                            const modalInstance = bootstrap.Modal.getInstance(myModalEl);
+                            const modalInstance = bootstrap.Modal.getOrCreateInstance(myModalEl);
                             if (modalInstance) modalInstance.hide();
                             else {
                                 const closeBtn = document.querySelector('#crudModal .btn-close');
@@ -592,7 +592,7 @@
                     if (response.ok) {
                         const approveModalEl = document.getElementById('approveStockInModal');
                         if (approveModalEl) {
-                            const approveInstance = bootstrap.Modal.getInstance(approveModalEl);
+                            const approveInstance = bootstrap.Modal.getOrCreateInstance(approveModalEl);
                             if (approveInstance) approveInstance.hide();
                         }
                         showCyberAlert("Đã duyệt phiếu thành công!", "success");
@@ -629,7 +629,7 @@
                     if (response.ok) {
                         const cancelModalEl = document.getElementById('cancelStockInModal');
                         if (cancelModalEl) {
-                            const cancelInstance = bootstrap.Modal.getInstance(cancelModalEl);
+                            const cancelInstance = bootstrap.Modal.getOrCreateInstance(cancelModalEl);
                             if (cancelInstance) cancelInstance.hide();
                         }
                         showCyberAlert("Đã hủy phiếu nhập!", "success");
@@ -699,7 +699,7 @@
                         window.location.href = downloadUrl;
                         
                         const modalEl = document.getElementById('exportExcelModal');
-                        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
                         if (modalInstance) modalInstance.hide();
                         
                         showCyberAlert("Báo cáo Excel đang được tải xuống!", "success");
