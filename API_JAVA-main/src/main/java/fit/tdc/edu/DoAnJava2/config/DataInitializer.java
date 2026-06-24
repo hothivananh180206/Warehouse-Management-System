@@ -1,6 +1,6 @@
 package fit.tdc.edu.DoAnJava2.config;
 
-import fit.tdc.edu.DoAnJava2.entity.User;
+import fit.tdc.edu.DoAnJava2.model.User;
 import fit.tdc.edu.DoAnJava2.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
