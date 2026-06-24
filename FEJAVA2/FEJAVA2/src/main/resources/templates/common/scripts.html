@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="footer_scripts">
+
+    <div class="toast-container position-fixed top-0 end-0 p-4" style="z-index: 9999;">
+        <div id="cyberSuccessToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true" style="background: rgba(10, 20, 15, 0.95); backdrop-filter: blur(10px); box-shadow: 0 0 20px rgba(0, 255, 170, 0.3); border-left: 4px solid #00ffaa !important;">
+            <div class="d-flex">
+                <div class="toast-body" style="font-family: 'Poppins', sans-serif; font-size: 0.95rem;">
+                    <i class="fas fa-check-circle me-2" style="color: #00ffaa; text-shadow: 0 0 10px #00ffaa;"></i>
+                    <span id="successToastMessage">Thao tác thành công!</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalError" class="mt-2" style="display: none; color: #ff003c; font-size: 0.85rem; font-style: italic; z-index: 1060; position: relative;">
+        <i class="fas fa-exclamation-circle me-1"></i><span id="modalErrorText"></span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // HÀM 1: Bật Toast Thành công
+        function showSuccessToast(message) {
+            document.getElementById('successToastMessage').innerText = message;
+            var toastEl = document.getElementById('cyberSuccessToast');
+            var toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+        }
+
+        // HÀM 2: Hiển thị lỗi thông minh dưới ô Input
+        function showModalError(message, targetInputId) {
+            const errorBox = document.getElementById('modalError');
+            const errorText = document.getElementById('modalErrorText');
+            const targetInput = document.getElementById(targetInputId);
+
+            hideModalError(); // Dọn dẹp trước
+            targetInput.insertAdjacentElement('afterend', errorBox); // Dịch chuyển khung lỗi
+            errorText.innerText = message;
+            errorBox.style.display = 'block';
+
+            targetInput.style.borderColor = '#ff003c';
+            targetInput.style.boxShadow = '0 0 10px rgba(255, 0, 60, 0.5)';
+        }
+
+        // HÀM 3: Ẩn lỗi (Tự động quét sạch viền đỏ của TOÀN BỘ input trên form)
+        function hideModalError() {
+            const errorBox = document.getElementById('modalError');
+            if(errorBox) errorBox.style.display = 'none';
+
+            // Không cần hardcode 'cusName' nữa, quét sạch mọi thẻ input có class form-control
+            document.querySelectorAll('.form-control').forEach(input => {
+                input.style.borderColor = '';
+                input.style.boxShadow = '';
+            });
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 🌟 0. KHỞI TẠO TRẠNG THÁI THU NHỎ SIDEBAR TỪ LOCALSTORAGE
+            // 🌟 0. KHỞI TẠO TRẠNG THÁI THU NHỎ SIDEBAR TỪ LOCALSTORAGE
+            const body = document.body;
+            if (localStorage.getItem('sidebar-collapsed') === 'true') {
+                body.classList.add('sidebar-collapsed');
+                // Gắn thêm class collapsed để cái nút Hamburger biến thành dấu X lúc vừa load web
+                const sidebarNav = document.querySelector('.sidebar');
+                if (sidebarNav) sidebarNav.classList.add('collapsed');
+            }
+
+            // (Đoạn 1. VANTA 3D, 2. SPA, 3. Phân trang AJAX, 4. Jump Form, 5. Live Search của đại ca ở đây giữ nguyên 100%, không cần đụng tới)
+            let vantaEffect = VANTA.NET({
+                el: "#vanta-canvas", mouseControls: true, touchControls: true, gyroControls: false,
+                minHeight: 200, minWidth: 200, scale: 1, scaleMobile: 1,
+                color: 0x00f2ff, backgroundColor: 0x030609, points: 10, maxDistance: 20, spacing: 20, speed: 5, mouseEase: true
+            });
+            window.addEventListener('beforeunload', () => { if (vantaEffect) vantaEffect.destroy(); });
+
+            const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', async (e) => {
+                    const url = link.getAttribute('href');
+                    if (!url || url === '#' || url.includes('/logout')) return;
+                    e.preventDefault();
+                    try {
+                        const response = await fetch(url);
+                        if (response.redirected) { window.location.href = response.url; return; }
+                        const htmlText = await response.text();
+                        const parser = new DOMParser();
+                        const htmlDoc = parser.parseFromString(htmlText, 'text/html');
+                        const newMainContent = htmlDoc.querySelector('.main-content');
+                        if (newMainContent) {
+                            document.querySelector('.main-content').innerHTML = newMainContent.innerHTML;
+                            document.title = htmlDoc.title;
+                            window.history.pushState({}, '', url);
+                            sidebarLinks.forEach(l => l.classList.remove('active'));
+                            link.classList.add('active');
+                            const injectedScripts = document.querySelector('.main-content').querySelectorAll('script');
+                            injectedScripts.forEach(oldScript => {
+                                const newScript = document.createElement('script');
+                                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                                newScript.textContent = oldScript.textContent;
+                                document.body.appendChild(newScript);
+                                oldScript.remove();
+                            });
+                        }
+                    } catch (error) { console.error('Lỗi SPA:', error); window.location.href = url; }
+                });
+            });
+            window.addEventListener('popstate', () => { window.location.reload(); });
+
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('.ajax-page-link');
+                if (link) {
+                    e.preventDefault();
+                    if (link.closest('.page-item').classList.contains('disabled')) return;
+                    fetchPageData(link.href, link.getAttribute('data-target'));
+
+                    // 🌟 DÒNG CHỐNG BUG: Cập nhật URL trình duyệt để JS không bị lú
+                    window.history.pushState({}, '', link.href);
+                }
+            });
+
+            document.addEventListener('submit', function(e) {
+                if (e.target.classList.contains('ajax-jump-form')) {
+                    e.preventDefault();
+                    const form = e.target;
+                    const pageInput = form.querySelector('input[name="page"]');
+                    let pageVal = parseInt(pageInput.value) - 1;
+                    if (isNaN(pageVal) || pageVal < 0) return;
+                    const formData = new FormData(form);
+                    formData.set('page', pageVal);
+                    const finalUrl = `${form.getAttribute('action')}?${new URLSearchParams(formData).toString()}`;
+                    fetchPageData(finalUrl, form.getAttribute('data-target'));
+                    window.history.pushState({}, '', finalUrl);
+                    pageInput.value = '';
+                }
+            });
+
+            let searchTimeout = null;
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('search-input')) {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        const targetContainer = document.querySelector('[id$="-data-container"]');
+                        if (targetContainer) {
+                            const url = `${window.location.pathname}?keyword=${encodeURIComponent(e.target.value.trim())}&page=0`;
+                            fetchPageData(url, targetContainer.id);
+                            window.history.pushState({}, '', url);
+                        }
+                    }, 500);
+                }
+            });
+
+            // 🌟 SIDEBAR COLLAPSER EVENT HANDLER (Đã update cho nút Hamburger Neon)
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.toggle-sidebar-btn'); // Tìm theo class của nút mới
+                if (btn) {
+                    e.preventDefault();
+                    // 1. Thu nhỏ/phóng to giao diện
+                    const isCollapsed = body.classList.toggle('sidebar-collapsed');
+                    localStorage.setItem('sidebar-collapsed', isCollapsed);
+
+                    // 2. Kích hoạt hiệu ứng xoay biến thành dấu X cho Hamburger
+                    const sidebarNav = document.querySelector('.sidebar');
+                    if (sidebarNav) sidebarNav.classList.toggle('collapsed', isCollapsed);
+                }
+            });
+
+            function fetchPageData(url, targetId) {
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(response => response.text())
+                    .then(html => {
+                        const container = document.getElementById(targetId);
+                        if (container) container.outerHTML = html;
+                    });
+            }
+        });
+    </script>
+    <script>
+        // HÀM 1: Bật Toast Thành công (Cũ)
+        function showSuccessToast(message) {
+            document.getElementById('successToastMessage').innerText = message;
+            var toastEl = document.getElementById('cyberSuccessToast');
+            var toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+        }
+
+        // HÀM 2: Hiển thị lỗi thông minh dưới ô Input (Cũ)
+        function showModalError(message, targetInputId) {
+            const errorBox = document.getElementById('modalError');
+            const errorText = document.getElementById('modalErrorText');
+            const targetInput = document.getElementById(targetInputId);
+            hideModalError();
+            targetInput.insertAdjacentElement('afterend', errorBox);
+            errorText.innerText = message;
+            errorBox.style.display = 'block';
+            targetInput.style.borderColor = '#ff003c';
+            targetInput.style.boxShadow = '0 0 10px rgba(255, 0, 60, 0.5)';
+        }
+
+        function hideModalError() {
+            const errorBox = document.getElementById('modalError');
+            if(errorBox) errorBox.style.display = 'none';
+            document.querySelectorAll('.form-control').forEach(input => {
+                input.style.borderColor = '';
+                input.style.boxShadow = '';
+            });
+        }
+        // 🌟 HÀM 4: LÀM MỚI BẢNG DỮ LIỆU CỰC KỲ AN TOÀN (CHỐNG LỖI NULL)
+        async function reloadTableData(containerId) {
+            try {
+                const url = window.location.href;
+                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (res.ok) {
+                    const html = await res.text();
+                    const temp = document.createElement('div');
+                    temp.innerHTML = html;
+                    // Bóc tách đúng khối HTML cần thiết để đắp vào, không làm gãy DOM
+                    const newContent = temp.querySelector('#' + containerId) || temp.firstElementChild;
+                    const oldContainer = document.getElementById(containerId);
+
+                    if (oldContainer && newContent) {
+                        oldContainer.replaceWith(newContent);
+                    } else {
+                        window.location.reload(); // Fallback an toàn tuyệt đối
+                    }
+                } else { window.location.reload(); }
+            } catch (e) { window.location.reload(); }
+        }
+        // 🌟 HÀM 3 (MỚI CHUYỂN VÀO): HỆ THỐNG THÔNG BÁO CYBER ALERT DÙNG CHUNG CHO TOÀN BỘ WEB
+        function showCyberAlert(message, type = 'warning') {
+            let container = document.getElementById('cyber-toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'cyber-toast-container';
+                container.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            let color, icon;
+            if (type === 'error') { color = '#ff003c'; icon = 'fa-times-circle'; }
+            else if (type === 'success') { color = '#00ffaa'; icon = 'fa-check-circle'; }
+            else { color = '#ffaa00'; icon = 'fa-exclamation-triangle'; }
+
+            toast.style.cssText = `
+                background: rgba(10, 15, 20, 0.95); border-left: 4px solid ${color};
+                color: #fff; padding: 15px 20px; border-radius: 6px; box-shadow: 0 0 15px ${color}40;
+                display: flex; align-items: center; min-width: 250px;
+                transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            `;
+            toast.innerHTML = `<i class="fas ${icon} me-3" style="color: ${color}; font-size: 1.2rem;"></i> <span style="font-weight:500; font-size:0.9rem;">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.style.transform = 'translateX(0)', 10);
+            setTimeout(() => {
+                toast.style.transform = 'translateX(120%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="top_header(pageTitle, greetingText)" class="page-header">
+
+    <h1 th:text="${pageTitle}">Tiêu đề mặc định</h1>
+
+    <div class="user-greeting">
+        <small th:text="${greetingText}">Chào mừng trở lại</small>
+        <a href="/profile" style="text-decoration: none; display: block; color: inherit;">
+            <strong th:text="${username}" style="cursor: pointer; transition: text-shadow 0.3s, color 0.3s;" onmouseover="this.style.textShadow='0 0 15px #00f2ff'; this.style.color='#00f2ff';" onmouseout="this.style.textShadow='0 0 10px rgba(0, 242, 255, 0.3)'; this.style.color='';">Admin</strong>
+        </a>
+    </div>
+
+</div>
+</body>
+</html>

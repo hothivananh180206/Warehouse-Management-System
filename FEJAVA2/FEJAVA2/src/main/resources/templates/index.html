@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head th:replace="~{common/head :: head_info('Biểu Đồ - Hệ Thống Quản Lý Kho')}"></head>
+
+<body>
+<div id="vanta-canvas"></div>
+
+<div class="container-fluid p-0">
+
+  <nav th:replace="~{common/sidebar :: sidebar_menu('dashboard')}"></nav>
+
+  <main class="main-content">
+
+    <div th:replace="~{common/styles}"></div>
+
+    <div th:replace="~{common/page-header :: top_header('Biểu Đồ Tổng Quan', 'Hệ Thống Trung Tâm')}"></div>
+
+    <!-- 🌟 HÀNG 1: 4 THẺ CHỈ SỐ NHANH KPI (GLASSMORPHISM NEON) -->
+    <div class="row g-4 mb-4">
+      <!-- Card 1: Tổng dòng sản phẩm -->
+      <div class="col-md-3">
+        <div class="cyber-table-card p-3 d-flex align-items-center justify-content-between" style="border-left: 4px solid var(--cyber-blue); box-shadow: 0 0 15px rgba(0, 242, 255, 0.15);">
+          <div>
+            <div class="text-uppercase small" style="letter-spacing: 1.5px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.85); font-weight: 600;">Dòng sản phẩm</div>
+            <h2 class="mt-2 mb-0" style="color: var(--cyber-blue); font-weight: 700; text-shadow: 0 0 10px rgba(0, 242, 255, 0.4);" th:text="${stats != null ? stats.totalProducts : 0}">0</h2>
+          </div>
+          <div class="fs-1" style="color: var(--cyber-blue); opacity: 0.6; text-shadow: 0 0 10px rgba(0, 242, 255, 0.3);">
+            <i class="fas fa-boxes"></i>
+          </div>
+        </div>
+      </div>
+      <!-- Card 2: Tổng tồn kho -->
+      <div class="col-md-3">
+        <div class="cyber-table-card p-3 d-flex align-items-center justify-content-between" style="border-left: 4px solid #34c759; box-shadow: 0 0 15px rgba(52, 199, 89, 0.15);">
+          <div>
+            <div class="text-uppercase small" style="letter-spacing: 1.5px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.85); font-weight: 600;">Tổng lượng tồn</div>
+            <h2 class="mt-2 mb-0" style="color: #34c759; font-weight: 700; text-shadow: 0 0 10px rgba(52, 199, 89, 0.4);" th:text="${stats != null ? stats.totalStock : 0}">0</h2>
+          </div>
+          <div class="fs-1" style="color: #34c759; opacity: 0.6; text-shadow: 0 0 10px rgba(52, 199, 89, 0.3);">
+            <i class="fas fa-warehouse"></i>
+          </div>
+        </div>
+      </div>
+      <!-- Card 3: Doanh thu xuất kho -->
+      <div class="col-md-3">
+        <div class="cyber-table-card p-3 d-flex align-items-center justify-content-between" style="border-left: 4px solid #d300ff; box-shadow: 0 0 15px rgba(211, 0, 255, 0.15);">
+          <div>
+            <div class="text-uppercase small" style="letter-spacing: 1.5px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.85); font-weight: 600;">Doanh thu Xuất</div>
+            <h2 class="mt-2 mb-0" style="color: #d300ff; font-weight: 700; text-shadow: 0 0 10px rgba(211, 0, 255, 0.4);"
+                th:text="${stats != null && stats.totalExportRevenue > 0 ? #numbers.formatInteger(stats.totalExportRevenue, 1, 'POINT') + ' ₫' : '0 ₫'}">0 ₫</h2>
+          </div>
+          <div class="fs-1" style="color: #d300ff; opacity: 0.6; text-shadow: 0 0 10px rgba(211, 0, 255, 0.3);">
+            <i class="fas fa-file-invoice-dollar"></i>
+          </div>
+        </div>
+      </div>
+      <!-- Card 4: Chi phí nhập kho -->
+      <div class="col-md-3">
+        <div class="cyber-table-card p-3 d-flex align-items-center justify-content-between" style="border-left: 4px solid #ff9500; box-shadow: 0 0 15px rgba(255, 149, 0, 0.15);">
+          <div>
+            <div class="text-uppercase small" style="letter-spacing: 1.5px; font-size: 0.8rem; color: rgba(255, 255, 255, 0.85); font-weight: 600;">Chi phí Nhập</div>
+            <h2 class="mt-2 mb-0" style="color: #ff9500; font-weight: 700; text-shadow: 0 0 10px rgba(255, 149, 0, 0.4);"
+                th:text="${stats != null && stats.totalImportCost > 0 ? #numbers.formatInteger(stats.totalImportCost, 1, 'POINT') + ' ₫' : '0 ₫'}">0 ₫</h2>
+          </div>
+          <div class="fs-1" style="color: #ff9500; opacity: 0.6; text-shadow: 0 0 10px rgba(255, 149, 0, 0.3);">
+            <i class="fas fa-shopping-cart"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🌟 HÀNG 2: BIỂU ĐỒ XU HƯỚNG GIAO DỊCH FULL WIDTH -->
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="cyber-table-card p-4" style="min-height: 420px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.05);">
+          <h5 class="text-white mb-4" style="text-shadow: 0 0 10px rgba(0, 242, 255, 0.6); font-weight: 700; letter-spacing: 0.5px;">
+            <i class="fas fa-chart-area me-2" style="color: #00f2ff; text-shadow: 0 0 8px #00f2ff;"></i> XU HƯỚNG GIAO DỊCH NHẬP - XUẤT KHO (6 THÁNG QUA)
+          </h5>
+          <div style="position: relative; height: 320px;">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🌟 HÀNG 3: TOP 5 SẢN PHẨM BÁN CHẠY NHẤT -->
+    <div class="row g-4">
+      <div class="col-lg-12">
+        <div class="cyber-table-card p-4" style="box-shadow: 0 0 20px rgba(0, 242, 255, 0.05);">
+          <h5 class="text-white mb-4" style="text-shadow: 0 0 10px rgba(0, 242, 255, 0.6); font-weight: 700; letter-spacing: 0.5px;">
+            <i class="fas fa-trophy me-2" style="color: #00f2ff; text-shadow: 0 0 8px #00f2ff;"></i> XẾP HẠNG TOP 5 SẢN PHẨM BÁN CHẠY NHẤT
+          </h5>
+          <div style="position: relative; height: 280px;">
+            <canvas id="topSellersChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <script>
+  // Sử dụng IIFE (Immediately Invoked Function Expression) để đóng gói code,
+  // tránh làm ô nhiễm scope toàn cục (global scope).
+  (function() {
+    /**
+     * Hàm chính khởi tạo các biểu đồ trên trang dashboard.
+     */
+    function initDashboardCharts() {
+      // Lấy các phần tử <canvas> từ DOM bằng ID của chúng.
+      const trendCanvas = document.getElementById('trendChart');
+      const sellersCanvas = document.getElementById('topSellersChart');
+
+      // Kiểm tra xem các phần tử canvas có tồn tại không. Nếu không, in cảnh báo và dừng thực thi.
+      if (!trendCanvas || !sellersCanvas) {
+        console.warn("Chưa tìm thấy phần tử Canvas để vẽ biểu đồ!");
+        return;
+      }
+
+      // Sử dụng Fetch API để gửi yêu cầu AJAX đến endpoint của server,
+      // lấy về dữ liệu thống kê cần thiết để vẽ biểu đồ.
+      fetch('/api/dashboard/stats')
+        .then(response => response.json()) // Chuyển đổi response thành đối tượng JSON.
+        .then(data => {
+          // Nếu không có dữ liệu trả về, dừng thực thi.
+          if (!data) return;
+
+          // =================================================================
+          // 1. VẼ BIỂU ĐỒ XU HƯỚNG NHẬP - XUẤT KHO (BIỂU ĐỒ ĐƯỜNG - LINE AREA)
+          // =================================================================
+          const ctxTrend = trendCanvas.getContext('2d'); // Lấy context 2D để vẽ lên canvas.
+
+          // Tạo hiệu ứng màu gradient cho vùng dưới đường "Xuất kho".
+          const cyanGlow = ctxTrend.createLinearGradient(0, 0, 0, 320); // Gradient từ trên xuống dưới.
+          cyanGlow.addColorStop(0, 'rgba(0, 242, 255, 0.35)'); // Màu bắt đầu (phía trên).
+          cyanGlow.addColorStop(1, 'rgba(0, 242, 255, 0.0)');   // Màu kết thúc (trong suốt ở dưới).
+
+          // Tạo hiệu ứng màu gradient cho vùng dưới đường "Nhập kho".
+          const purpleGlow = ctxTrend.createLinearGradient(0, 0, 0, 320);
+          purpleGlow.addColorStop(0, 'rgba(211, 0, 255, 0.35)');
+          purpleGlow.addColorStop(1, 'rgba(211, 0, 255, 0.0)');
+
+          // Trích xuất dữ liệu từ API: nhãn (tháng) và các giá trị tương ứng.
+          const trendLabels = data.monthlyTrend.map(item => item.label);
+          const exportValues = data.monthlyTrend.map(item => item.exportValue);
+          const importValues = data.monthlyTrend.map(item => item.importValue);
+
+          // Khởi tạo một biểu đồ mới bằng Chart.js.
+          new Chart(ctxTrend, {
+            type: 'line', // Loại biểu đồ là biểu đồ đường.
+            data: {
+              labels: trendLabels, // Nhãn cho trục X (các tháng).
+              datasets: [
+                {
+                  label: 'Doanh thu Xuất kho', // Tên của bộ dữ liệu này.
+                  data: exportValues, // Dữ liệu doanh thu xuất.
+                  borderColor: '#00f2ff', // Màu của đường kẻ.
+                  backgroundColor: cyanGlow, // Màu nền (sử dụng gradient đã tạo).
+                  fill: true, // Tô màu cho khu vực dưới đường kẻ.
+                  tension: 0.4, // Làm cho đường kẻ cong và mượt hơn.
+                  borderWidth: 3, // Độ dày của đường kẻ.
+                  pointBackgroundColor: '#00f2ff', // Màu nền của các điểm dữ liệu.
+                  pointBorderColor: '#fff', // Màu viền của các điểm dữ liệu.
+                  pointHoverRadius: 8 // Bán kính của điểm khi di chuột qua.
+                },
+                {
+                  label: 'Chi phí Nhập kho',
+                  data: importValues,
+                  borderColor: '#d300ff',
+                  backgroundColor: purpleGlow,
+                  fill: true,
+                  tension: 0.4,
+                  borderWidth: 3,
+                  pointBackgroundColor: '#d300ff',
+                  pointBorderColor: '#fff',
+                  pointHoverRadius: 8
+                }
+              ]
+            },
+            options: {
+              responsive: true, // Biểu đồ sẽ tự điều chỉnh kích thước theo container.
+              maintainAspectRatio: false, // Không giữ tỷ lệ khung hình, cho phép biểu đồ lấp đầy container.
+              plugins: {
+                legend: { // Cấu hình cho phần chú thích (legend).
+                  labels: { color: 'rgba(255, 255, 255, 0.8)', font: { family: 'Inter', size: 12 } }
+                },
+                tooltip: { // Cấu hình cho tooltip khi di chuột qua.
+                  backgroundColor: 'rgba(10, 20, 30, 0.95)',
+                  titleColor: '#00f2ff',
+                  borderColor: 'rgba(0, 242, 255, 0.3)',
+                  borderWidth: 1,
+                  bodyFont: { family: 'Inter' },
+                  titleFont: { family: 'Poppins', weight: 'bold' },
+                  callbacks: {
+                    // Định dạng lại nội dung hiển thị trong tooltip.
+                    label: function(context) {
+                      let label = context.dataset.label || '';
+                      if (label) {
+                        label += ': ';
+                      }
+                      if (context.parsed.y !== null) {
+                        // Định dạng số theo kiểu Việt Nam và thêm đơn vị '₫'.
+                        label += context.parsed.y.toLocaleString('vi-VN') + ' ₫';
+                      }
+                      return label;
+                    }
+                  }
+                }
+              },
+              scales: { // Cấu hình cho các trục (axes).
+                x: { // Trục hoành (X).
+                  grid: { color: 'rgba(0, 242, 255, 0.05)' }, // Màu của đường lưới.
+                  ticks: { color: 'rgba(255, 255, 255, 0.6)', font: { family: 'Inter' } } // Màu và font của nhãn trục.
+                },
+                y: { // Trục tung (Y).
+                  grid: { color: 'rgba(0, 242, 255, 0.05)' },
+                  ticks: {
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    font: { family: 'Inter' },
+                    // Định dạng lại nhãn trên trục Y để hiển thị đơn vị tiền tệ.
+                    callback: function(value) { return value.toLocaleString('vi-VN') + ' ₫'; }
+                  }
+                }
+              }
+            }
+          });
+
+          // =====================================================================
+          // 2. VẼ BIỂU ĐỒ TOP 5 SẢN PHẨM BÁN CHẠY (BIỂU ĐỒ CỘT NGANG - BAR)
+          // =====================================================================
+          const ctxSellers = sellersCanvas.getContext('2d');
+          const sellerLabels = data.topSellers.map(item => item.name); // Tên sản phẩm.
+          const sellerSales = data.topSellers.map(item => item.totalSold); // Số lượng đã bán.
+
+          new Chart(ctxSellers, {
+            type: 'bar', // Loại biểu đồ là biểu đồ cột.
+            data: {
+              labels: sellerLabels,
+              datasets: [{
+                label: 'Lượng hàng bán ra',
+                data: sellerSales,
+                backgroundColor: 'rgba(0, 242, 255, 0.75)',
+                borderColor: '#00f2ff',
+                borderWidth: 2,
+                borderRadius: 8, // Bo tròn các góc của cột.
+                borderSkipped: false // Áp dụng bo tròn cho tất cả các cạnh.
+              }]
+            },
+            options: {
+              indexAxis: 'y', // Đặt trục chính là 'y' để tạo biểu đồ cột ngang.
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false }, // Ẩn chú thích vì chỉ có một bộ dữ liệu.
+                tooltip: {
+                  backgroundColor: 'rgba(10, 20, 30, 0.95)',
+                  borderColor: 'rgba(0, 242, 255, 0.2)',
+                  borderWidth: 1
+                }
+              },
+              scales: {
+                x: { // Trục X (bây giờ là trục giá trị).
+                  grid: { color: 'rgba(0, 242, 255, 0.05)' },
+                  ticks: { color: 'rgba(255, 255, 255, 0.6)', font: { family: 'Inter' } }
+                },
+                y: { // Trục Y (bây giờ là trục danh mục sản phẩm).
+                  grid: { display: false }, // Ẩn đường lưới của trục Y cho gọn.
+                  ticks: { color: 'rgba(255, 255, 255, 0.8)', font: { family: 'Inter', weight: 'bold' } }
+                }
+              }
+            }
+          });
+        })
+        .catch(err => console.error("Lỗi nạp biểu đồ AJAX Dashboard: ", err)); // Bắt và in lỗi nếu fetch thất bại.
+    }
+
+    // 🌟 CHỐNG BUG SPA: Xử lý việc thực thi script trong các ứng dụng Single Page Application (SPA).
+    // Nếu trang được tải lại hoàn toàn, 'DOMContentLoaded' sẽ được kích hoạt.
+    // Nếu trang chỉ được cập nhật qua AJAX (như trong SPA), DOM có thể đã sẵn sàng.
+    // Kỹ thuật này đảm bảo hàm initDashboardCharts() được gọi đúng thời điểm.
+    if (document.readyState === 'loading') {
+      // DOM chưa sẵn sàng, đợi sự kiện 'DOMContentLoaded'.
+      document.addEventListener('DOMContentLoaded', initDashboardCharts);
+    } else {
+      // DOM đã sẵn sàng, thực thi hàm ngay lập tức.
+      initDashboardCharts();
+    }
+  })();
+</script>
+
+  </main>
+
+</div>
+
+<div th:replace="~{common/scripts :: footer_scripts}"></div>
+
+</body>
+</html>

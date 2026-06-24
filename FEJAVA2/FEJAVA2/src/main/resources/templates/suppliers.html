@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head th:replace="~{common/head :: head_info('Nhà Cung Cấp - Hệ Thống Quản Lý Kho')}"></head>
+
+<body>
+<div id="vanta-canvas"></div>
+
+<div class="container-fluid p-0">
+    <nav th:replace="~{common/sidebar :: sidebar_menu('suppliers')}"></nav>
+
+    <main class="main-content">
+        <div th:replace="~{common/styles}"></div>
+        <div th:replace="~{common/page-header :: top_header('Cơ Sở Dữ Liệu Nhà Cung Cấp', 'Quản Lý Đối Tác')}"></div>
+
+        <div th:replace="~{common/action-bar :: crud_bar('Nhà Cung Cấp', 'Tìm tên nhà cung cấp...')}"></div>
+
+        <div id="supplier-data-container">
+            <div th:replace="~{common/table-card :: ajax_data_grid(
+                ~{::table},
+                ~{common/pagination-par :: pagination_bar(${currentPage}, ${totalPages}, '/suppliers', 'supplier-data-container')}
+            )}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th><i class="fas fa-hashtag" style="margin-right: 8px;"></i>STT</th>
+                        <th><i class="fas fa-building" style="margin-right: 8px;"></i>Tên Nhà Cung Cấp</th>
+                        <th><i class="fas fa-phone" style="margin-right: 8px;"></i>SĐT Đối Tác</th>
+                        <th><i class="fas fa-map-marker-alt" style="margin-right: 8px;"></i>Địa Chỉ</th>
+                        <th th:if="${session.ROLE == 'ADMIN'}" class="text-end"><i class="fas fa-cogs" style="margin-right: 8px;"></i>Thao Tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="s, iterStat : ${list}">
+                        <td th:text="${(currentPage * pageSize) + iterStat.count}" style="color: rgba(0, 242, 255, 0.7);"></td>
+                        <td th:text="${s.name}" style="color: #e0e0e0; font-weight: 600;"></td>
+                        <td class="price-tag" th:text="${s.phone}"></td>
+                        <td style="color: #a0a0a0;" th:text="${s.address}"></td>
+                        <td th:if="${session.ROLE == 'ADMIN'}" class="text-end">
+                            <button class="btn btn-sm btn-outline-info rounded-circle me-1"
+                                    style="width: 32px; height: 32px; padding: 0;"
+                                    th:data-id="${s.id}"
+                                    th:data-name="${s.name}"
+                                    th:data-phone="${s.phone}"
+                                    th:data-address="${s.address}"
+                                    onclick="openEditModal(this.dataset.id, this.dataset.name, this.dataset.phone, this.dataset.address)">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger rounded-circle"
+                                    style="width: 32px; height: 32px; padding: 0;"
+                                    th:data-id="${s.id}"
+                                    th:data-name="${s.name}"
+                                    onclick="deleteSupplier(this.dataset.id, this.dataset.name)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="modal fade" id="crudModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background: rgba(10, 15, 20, 0.95); backdrop-filter: blur(20px); border: 1px solid #00f2ff; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 242, 255, 0.2);">
+                        <h5 class="modal-title" id="modalTitle" style="color: #00f2ff; font-weight: 600; font-family: 'Poppins', sans-serif;">
+                            <i class="fas fa-plus-circle me-2"></i>Thêm Nhà Cung Cấp
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="supId">
+                        <div class="mb-3">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Tên nhà cung cấp (*)</label>
+                            <input type="text" id="supName" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5); transition: all 0.3s;" placeholder="Nhập tên đối tác...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Số điện thoại liên hệ (*)</label>
+                            <input type="text" id="supPhone" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5); transition: all 0.3s;" placeholder="Nhập SĐT...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Địa chỉ công ty</label>
+                            <input type="text" id="supAddress" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5);" placeholder="Nhập địa chỉ...">
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid rgba(0, 242, 255, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy Bỏ</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-success" onclick="saveSupplier()">
+                            <i class="fas fa-save me-2"></i>Lưu Dữ Liệu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(15, 5, 5, 0.95); backdrop-filter: blur(20px); border: 1px solid #ff003c; box-shadow: 0 0 30px rgba(255, 0, 60, 0.2);">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(255, 0, 60, 0.2);">
+                        <h5 class="modal-title" style="color: #ff003c; font-weight: 600;"><i class="fas fa-exclamation-triangle me-2"></i>Cảnh Báo</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-trash-alt mb-3" style="font-size: 3rem; color: #ff003c; text-shadow: 0 0 15px rgba(255,0,60,0.6);"></i>
+                        <p style="color: #ffffff; font-size: 1rem;">Ngừng hợp tác với:</p>
+                        <h4 id="deleteTargetName" style="color: #ff003c; font-weight: bold;">---</h4>
+                        <input type="hidden" id="deleteTargetId">
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center" style="border-top: 1px solid rgba(255, 0, 60, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Quay Lại</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-danger" onclick="executeDelete()">Xác Nhận Xóa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function resetSupplierModal() {
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Thêm Nhà Cung Cấp';
+                document.getElementById('supId').value = '';
+                document.getElementById('supName').value = '';
+                document.getElementById('supPhone').value = '';
+                document.getElementById('supAddress').value = '';
+                if(typeof hideModalError === "function") hideModalError();
+            }
+
+            function resetModal() {
+                resetSupplierModal();
+            }
+
+            function openEditModal(id, name, phone, address) {
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-pen me-2"></i>Cập Nhật Nhà Cung Cấp';
+                document.getElementById('supId').value = id;
+                document.getElementById('supName').value = name;
+                document.getElementById('supPhone').value = (phone === 'null' || !phone) ? '' : phone;
+                document.getElementById('supAddress').value = (address === 'null' || !address) ? '' : address;
+                if(typeof hideModalError === "function") hideModalError();
+                var myModal = new bootstrap.Modal(document.getElementById('crudModal'));
+                myModal.show();
+            }
+
+            async function saveSupplier() {
+                if(typeof hideModalError === "function") hideModalError();
+
+                const id = document.getElementById('supId').value;
+                const name = document.getElementById('supName').value.trim();
+                const phone = document.getElementById('supPhone').value.trim();
+                const address = document.getElementById('supAddress').value.trim();
+
+                // Check trống Tên
+                if (!name) {
+                    if(typeof showModalError === "function") showModalError("Tên nhà cung cấp không được để trống!", "supName");
+                    return;
+                }
+
+                // Cảnh báo thêm: Trống SĐT (tùy đại ca có muốn bắt buộc không)
+                if (!phone) {
+                    if(typeof showModalError === "function") showModalError("Cần nhập số điện thoại để tiện liên lạc!", "supPhone");
+                    return;
+                }
+
+                const payload = {
+                    id: id ? parseInt(id) : null,
+                    name: name,
+                    phone: phone,
+                    address: address
+                };
+
+                try {
+                    const response = await fetch('/suppliers/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã lưu thông tin nhà cung cấp!");
+
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click();
+                        else reloadTableData('supplier-data-container');
+                    } else {
+                        const errText = await response.text();
+                        // 🌟 NẾU LỖI TRÙNG SĐT -> BẬT VIỀN ĐỎ TẠI Ô "supPhone"
+                        if(typeof showModalError === "function") showModalError(errText, "supPhone");
+                    }
+                } catch (error) {
+                    if(typeof showModalError === "function") showModalError("Lỗi kết nối máy chủ!", "supName");
+                }
+            }
+
+            function deleteSupplier(id, name) {
+                document.getElementById('deleteTargetId').value = id;
+                document.getElementById('deleteTargetName').innerText = name;
+                new bootstrap.Modal(document.getElementById('deleteModal')).show();
+            }
+
+            async function executeDelete() {
+                const id = document.getElementById('deleteTargetId').value;
+                try {
+                    const response = await fetch(`/suppliers/delete/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã xóa nhà cung cấp thành công!");
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click();
+                        else reloadTableData('supplier-data-container');
+                    } else {
+                        alert("Xóa thất bại!");
+                    }
+                } catch (error) { console.error(error); }
+            }
+        </script>
+    </main>
+</div>
+
+<div th:replace="~{common/scripts :: footer_scripts}"></div>
+</body>
+</html>

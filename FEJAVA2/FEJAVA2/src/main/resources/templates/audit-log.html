@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head th:replace="~{common/head :: head_info('Nhật Ký Hoạt Động - Hệ Thống Quản Lý Kho')}"></head>
+
+<body>
+<div id="vanta-canvas"></div>
+
+<div class="container-fluid p-0">
+    <nav th:replace="~{common/sidebar :: sidebar_menu('audit-logs')}"></nav>
+
+    <main class="main-content">
+        <div th:replace="~{common/styles}"></div>
+        <div th:replace="~{common/page-header :: top_header('Nhật Ký Hoạt Động', 'Lịch Sử Thao Tác Hệ Thống')}"></div>
+
+        <!-- Cyberpunk Action & Filter Bar (Standardized in action-bar.html) -->
+        <div th:replace="~{common/action-bar :: audit_bar()}"></div>
+
+        <!-- Cyberpunk Data Table Container (Standardized structure mirroring products.html, IP column removed, original activity badge colors kept) -->
+        <div id="audit-log-data-container">
+            <div th:replace="~{common/table-card :: ajax_data_grid(
+                ~{::table},
+                ~{common/pagination-par :: pagination_bar(${currentPage}, ${totalPages}, '/audit-logs', 'audit-log-data-container')}
+            )}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th style="width: 80px;"><i class="fas fa-hashtag" style="margin-right: 8px;"></i>STT</th>
+                        <th style="width: 180px;"><i class="fas fa-calendar-alt" style="margin-right: 8px;"></i>Thời Gian</th>
+                        <th style="width: 150px;"><i class="fas fa-user-circle" style="margin-right: 8px;"></i>Tài Khoản</th>
+                        <th style="width: 180px;"><i class="fas fa-id-card" style="margin-right: 8px;"></i>Họ Tên</th>
+                        <th style="width: 180px;"><i class="fas fa-info-circle" style="margin-right: 8px;"></i>Hoạt Động</th>
+                        <th><i class="fas fa-file-alt" style="margin-right: 8px;"></i>Nội Dung Mô Tả</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="log, iterStat : ${list}">
+                        <td style="color: rgba(0, 242, 255, 0.7);" th:text="${(currentPage * pageSize) + iterStat.count}"></td>
+                        
+                        <td style="color: #e0e0e0;" 
+                            th:text="${log.createdAt != null ? #strings.substring(log.createdAt,8,10) + '/' + #strings.substring(log.createdAt,5,7) + '/' + #strings.substring(log.createdAt,0,4) + ' ' + #strings.substring(log.createdAt,11,19) : '---'}">
+                        </td>
+                        
+                        <td style="color: #ffffff; font-weight: 500;" th:text="${log.username}"></td>
+                        
+                        <td style="color: #a0a0a0;" th:text="${log.userId != null and userFullNameMap != null and userFullNameMap.containsKey(#strings.toString(log.userId)) ? userFullNameMap[#strings.toString(log.userId)] : '---'}"></td>
+                        
+                        <td>
+                            <!-- Original colored activity badges kept for maximum status distinction -->
+                            <span th:if="${log.actionType.startsWith('APPROVE')}" class="badge bg-success" style="font-size: 0.75rem;">
+                                <i class="fas fa-check-double me-1"></i>Duyệt Phiếu
+                            </span>
+                            <span th:if="${log.actionType.startsWith('CANCEL') or log.actionType.startsWith('DELETE')}" class="badge bg-danger" style="font-size: 0.75rem;">
+                                <i class="fas fa-ban me-1"></i>Hủy/Xóa
+                            </span>
+                            <span th:if="${log.actionType.startsWith('CREATE') and log.actionType != 'CREATE_USER'}" class="badge bg-info text-dark" style="font-size: 0.75rem;">
+                                <i class="fas fa-plus-circle me-1"></i>Tạo Mới
+                            </span>
+                            <span th:if="${log.actionType.startsWith('UPDATE')}" class="badge bg-primary" style="font-size: 0.75rem;">
+                                <i class="fas fa-pen me-1"></i>Chỉnh Sửa
+                            </span>
+                            <span th:if="${log.actionType == 'CREATE_USER'}" class="badge bg-warning text-dark" style="font-size: 0.75rem;">
+                                <i class="fas fa-user-shield me-1"></i>Tài Khoản
+                            </span>
+                            <span th:if="${!log.actionType.startsWith('APPROVE') and !log.actionType.startsWith('CANCEL') and !log.actionType.startsWith('DELETE') and !log.actionType.startsWith('CREATE') and !log.actionType.startsWith('UPDATE')}" class="badge bg-secondary" style="font-size: 0.75rem;">
+                                <i class="fas fa-tasks me-1"></i>Hoạt Động
+                            </span>
+                        </td>
+                        
+                        <td style="color: #ffffff; font-weight: 400;" th:text="${log.description}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(list)}">
+                        <td colspan="6" class="text-center py-4" style="color: rgba(255,255,255,0.4); font-style: italic;">
+                            <i class="fas fa-inbox me-2" style="font-size: 1.5rem; color: rgba(0, 242, 255, 0.4);"></i> Không tìm thấy lịch sử hoạt động nào phù hợp.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+            // Thiết lập màu nền và chữ tùy chỉnh cho các tùy chọn select (Theme Cyber)
+            document.addEventListener("DOMContentLoaded", function() {
+                const style = document.createElement('style');
+                style.innerHTML = `select option { background: rgba(10, 15, 20, 0.98); color: #00f2ff; }`;
+                document.head.appendChild(style);
+            });
+
+            // Bộ lọc AJAX đa năng cực nhạy
+            function filterAuditLogs(e) {
+                if (e) e.preventDefault();
+                const form = document.getElementById("filterForm");
+                const keyword = form.keyword.value;
+                const actionType = form.actionType.value;
+                const startDate = form.startDate.value;
+                const endDate = form.endDate.value;
+                
+                const url = `/audit-logs?keyword=${encodeURIComponent(keyword)}&actionType=${encodeURIComponent(actionType)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&page=0`;
+                
+                // Cập nhật thanh địa chỉ trình duyệt
+                window.history.pushState({}, '', url);
+                
+                // Gửi request XMLHttp
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(response => response.text())
+                    .then(html => {
+                        const container = document.getElementById('audit-log-data-container');
+                        if (container) {
+                            container.outerHTML = html;
+                        }
+                    })
+                    .catch(err => console.error('Lỗi khi lọc lịch sử hoạt động:', err));
+            }
+
+            // Debounce hỗ trợ tìm kiếm khi nhập ký tự
+            let localSearchTimeout = null;
+            function debounceFilterAuditLogs() {
+                clearTimeout(localSearchTimeout);
+                localSearchTimeout = setTimeout(() => {
+                    filterAuditLogs();
+                }, 450);
+            }
+        </script>
+    </main>
+</div>
+
+<div th:replace="~{common/scripts :: footer_scripts}"></div>
+</body>
+</html>

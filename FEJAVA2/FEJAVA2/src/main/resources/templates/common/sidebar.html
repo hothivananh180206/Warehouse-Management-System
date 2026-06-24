@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<nav th:fragment="sidebar_menu(activePage)" class="sidebar">
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+            <i class="fas fa-cube"></i>
+        </div>
+        <h5>Truy Cập Hệ Thống</h5>
+        <button class="toggle-sidebar-btn" aria-label="Toggle Navigation">
+            <div class="cyber-hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </button>
+    </div>
+
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a th:classappend="${activePage == 'dashboard'} ? 'active' : ''" class="nav-link" href="/index">
+                <i class="fas fa-home"></i> <span>Biểu Đồ</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a th:classappend="${activePage == 'products'} ? 'active' : ''" class="nav-link" href="/products">
+                <i class="fas fa-shopping-cart"></i> <span>Sản Phẩm</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a th:classappend="${activePage == 'stock-in'} ? 'active' : ''" class="nav-link" href="/stock-in">
+                <i class="fas fa-truck-loading"></i> <span>Nhập Kho</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a th:classappend="${activePage == 'stock-out'} ? 'active' : ''" class="nav-link" href="/stock-out">
+                <i class="fas fa-dolly"></i> <span>Xuất Kho</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a th:classappend="${activePage == 'customers'} ? 'active' : ''" class="nav-link" href="/customers">
+                <i class="fas fa-users"></i> <span>Khách Hàng</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a th:classappend="${activePage == 'suppliers'} ? 'active' : ''" class="nav-link" href="/suppliers">
+                <i class="fas fa-building"></i> <span>Nhà Cung Cấp</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a th:classappend="${activePage == 'categories'} ? 'active' : ''" class="nav-link" href="/categories">
+                <i class="fas fa-tags"></i> <span>Danh Mục</span>
+            </a>
+        </li>
+        <li class="nav-item" th:if="${session.ROLE == 'ADMIN'}">
+            <a th:classappend="${activePage == 'users'} ? 'active' : ''" class="nav-link" href="/users">
+                <i class="fas fa-user-shield"></i> <span>Tài Khoản</span>
+            </a>
+        </li>
+        <li class="nav-item" th:if="${session.ROLE == 'ADMIN'}">
+            <a th:classappend="${activePage == 'audit-logs'} ? 'active' : ''" class="nav-link" href="/audit-logs">
+                <i class="fas fa-history"></i> <span>Nhật Ký</span>
+            </a>
+        </li>
+    </ul>
+
+    <hr class="mx-3">
+
+    <ul class="nav flex-column mb-2">
+        <li class="nav-item">
+            <a th:classappend="${activePage == 'profile'} ? 'active' : ''" class="nav-link" href="/profile">
+                <i class="fas fa-cog"></i> <span>Cài Đặt</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-danger" href="/logout">
+                <i class="fas fa-sign-out-alt"></i> <span>Đăng Xuất</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+</body>
+</html>

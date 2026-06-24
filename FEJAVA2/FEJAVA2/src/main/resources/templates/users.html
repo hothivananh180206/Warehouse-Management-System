@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head th:replace="~{common/head :: head_info('Tài Khoản - Hệ Thống Quản Lý Kho')}"></head>
+
+<body>
+<div id="vanta-canvas"></div>
+
+<div class="container-fluid p-0">
+    <nav th:replace="~{common/sidebar :: sidebar_menu('users')}"></nav>
+
+    <main class="main-content">
+        <div th:replace="~{common/styles}"></div>
+        <div th:replace="~{common/page-header :: top_header('Quản Trị Người Dùng', 'Bảo Mật Hệ Thống')}"></div>
+
+        <div th:replace="~{common/action-bar :: crud_bar('Tài Khoản', 'Tìm tài khoản, họ tên, sđt...')}"></div>
+
+        <div id="user-data-container">
+            <div th:replace="~{common/table-card :: ajax_data_grid(
+                ~{::table},
+                ~{common/pagination-par :: pagination_bar(${currentPage}, ${totalPages}, '/users', 'user-data-container')}
+            )}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th><i class="fas fa-hashtag" style="margin-right: 8px;"></i>STT</th>
+                        <th><i class="fas fa-user" style="margin-right: 8px;"></i>Tài Khoản</th>
+                        <th><i class="fas fa-id-card" style="margin-right: 8px;"></i>Họ Và Tên</th>
+                        <th><i class="fas fa-phone" style="margin-right: 8px;"></i>Số Điện thoại</th>
+                        <th><i class="fas fa-envelope" style="margin-right: 8px;"></i>Email</th>
+                        <th><i class="fas fa-user-shield" style="margin-right: 8px;"></i>Cấp Quyền</th>
+                        <th><i class="fas fa-toggle-on" style="margin-right: 8px;"></i>Trạng Thái</th>
+                        <th class="text-end"><i class="fas fa-cogs" style="margin-right: 8px;"></i>Thao Tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="u, iterStat : ${list}">
+                        <td th:text="${(currentPage * pageSize) + iterStat.count}" style="color: rgba(0, 242, 255, 0.7);"></td>
+                        <td th:text="${u.username}" style="color: #ffffff; font-weight: bold;"></td>
+                        <td th:text="${u.fullName != null ? u.fullName : '---'}" style="color: #e0e0e0;"></td>
+                        <td th:text="${u.phone != null ? u.phone : '---'}" style="color: #00f2ff;"></td>
+                        <td th:text="${u.email != null ? u.email : '---'}" style="color: #a0a0a0;"></td>
+                        <td>
+                            <span th:if="${u.role == 'ADMIN'}" class="badge" style="background: rgba(255, 0, 128, 0.2); color: #ff0080; border: 1px solid rgba(255, 0, 128, 0.4);">ADMIN</span>
+                            <span th:if="${u.role == 'STAFF'}" class="badge" style="background: rgba(0, 255, 170, 0.2); color: #00ffaa; border: 1px solid rgba(0, 255, 170, 0.4);">STAFF</span>
+                        </td>
+                        <td>
+                            <span th:if="${u.status == 'ACTIVE'}" class="badge" style="background: rgba(0, 255, 100, 0.15); color: #00ff64; border: 1px solid #00ff64;">ACTIVE</span>
+                            <span th:if="${u.status == 'PENDING'}" class="badge" style="background: rgba(255, 200, 0, 0.15); color: #ffc800; border: 1px solid #ffc800;">PENDING</span>
+                            <span th:if="${u.status == 'INACTIVE'}" class="badge" style="background: rgba(255, 0, 50, 0.15); color: #ff0032; border: 1px solid #ff0032;">INACTIVE</span>
+                        </td>
+                        <td class="text-end">
+                            <span th:if="${u.role == 'ADMIN'}" class="badge" style="background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.3); border: 1px dashed rgba(255, 255, 255, 0.2);">
+                                <i class="fas fa-shield-alt me-1"></i> Không thể chạm
+                            </span>
+
+                            <div th:if="${u.role != 'ADMIN'}" class="d-inline-block">
+                                <button th:if="${u.status == 'PENDING'}" class="btn btn-sm btn-outline-info rounded-circle me-1"
+                                        style="width: 32px; height: 32px; padding: 0;" title="Duyệt tài khoản"
+                                        th:data-id="${u.id}" th:data-username="${u.username}"
+                                        onclick="approveUser(this.dataset.id, this.dataset.username)">
+                                    <i class="fas fa-user-check"></i>
+                                </button>
+
+                                <button th:if="${u.status == 'INACTIVE'}" class="btn btn-sm btn-outline-success rounded-circle me-1"
+                                        style="width: 32px; height: 32px; padding: 0;" title="Mở khóa tài khoản"
+                                        th:data-id="${u.id}" th:data-username="${u.username}"
+                                        onclick="unlockUser(this.dataset.id, this.dataset.username)">
+                                    <i class="fas fa-unlock"></i>
+                                </button>
+
+                                <button th:if="${u.status == 'ACTIVE'}" class="btn btn-sm btn-outline-warning rounded-circle me-1"
+                                        style="width: 32px; height: 32px; padding: 0;" title="Khóa tài khoản"
+                                        th:data-id="${u.id}" th:data-username="${u.username}"
+                                        onclick="lockUser(this.dataset.id, this.dataset.username)">
+                                    <i class="fas fa-lock"></i>
+                                </button>
+
+                                <button class="btn btn-sm btn-outline-danger rounded-circle"
+                                        style="width: 32px; height: 32px; padding: 0;" title="Xóa vĩnh viễn"
+                                        th:data-id="${u.id}" th:data-username="${u.username}"
+                                        onclick="deleteUser(this.dataset.id, this.dataset.username)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="modal fade" id="crudModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background: rgba(10, 15, 20, 0.95); backdrop-filter: blur(20px); border: 1px solid #00f2ff;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 242, 255, 0.2);">
+                        <h5 class="modal-title" style="color: #00f2ff; font-weight: 600;"><i class="fas fa-user-plus me-2"></i>Cấp Tài Khoản Mới</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" style="opacity: 0; position: absolute; z-index: -1;" tabindex="-1">
+                        <input type="password" style="opacity: 0; position: absolute; z-index: -1;" tabindex="-1">
+
+                        <div class="mb-3">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Tên Đăng Nhập (*)</label>
+                            <input type="text" id="userName" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5);" placeholder="Nhập username..." autocomplete="new-password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Mật Khẩu (*)</label>
+                            <input type="password" id="userPass" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5);" placeholder="Nhập mật khẩu..." autocomplete="new-password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Họ Và Tên</label>
+                            <input type="text" id="userFullName" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5);" placeholder="Nhập họ tên nhân viên...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Số Điện Thoại</label>
+                            <input type="text" id="userPhone" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5);" placeholder="Nhập số điện thoại...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Email</label>
+                            <input type="email" id="userEmail" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5);" placeholder="Nhập email...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Cấp Quyền</label>
+                            <select id="userRole" class="form-select border-cyber text-white" style="background: rgba(0,0,0,0.5);">
+                                <option value="STAFF">Nhân Viên (STAFF)</option>
+                                <option value="ADMIN">Quản Trị Viên (ADMIN)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid rgba(0, 242, 255, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-success" onclick="saveUser()"><i class="fas fa-save me-2"></i>Tạo Tài Khoản</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(15, 5, 5, 0.95); border: 1px solid #ff003c;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(255, 0, 60, 0.2);">
+                        <h5 class="modal-title" style="color: #ff003c; font-weight: 600;"><i class="fas fa-exclamation-triangle me-2"></i>Cảnh Báo</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-user-slash mb-3" style="font-size: 3rem; color: #ff003c;"></i>
+                        <p style="color: #ffffff;">Thu hồi hoàn toàn tài khoản:</p>
+                        <h4 id="deleteTargetName" style="color: #ff003c; font-weight: bold;">---</h4>
+                        <input type="hidden" id="deleteTargetId">
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center" style="border-top: 1px solid rgba(255, 0, 60, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-danger" onclick="executeDelete()"><i class="fas fa-skull me-2"></i>Xóa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="lockModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(15, 10, 5, 0.95); border: 1px solid #ffaa00;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(255, 170, 0, 0.2);">
+                        <h5 class="modal-title" style="color: #ffaa00; font-weight: 600;"><i class="fas fa-user-lock me-2"></i>Vô Hiệu Hóa</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-lock mb-3" style="font-size: 3rem; color: #ffaa00;"></i>
+                        <p style="color: #ffffff;">Đình chỉ hoạt động tài khoản:</p>
+                        <h4 id="lockTargetName" style="color: #ffaa00; font-weight: bold;">---</h4>
+                        <input type="hidden" id="lockTargetId">
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center" style="border-top: 1px solid rgba(255, 170, 0, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-warning" style="background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid #ffaa00;" onclick="executeLock()"><i class="fas fa-ban me-2"></i>Khóa Ngay</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="unlockModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(5, 15, 10, 0.95); border: 1px solid #00ff64;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 255, 100, 0.2);">
+                        <h5 class="modal-title" style="color: #00ff64; font-weight: 600;"><i class="fas fa-lock-open me-2"></i>Mở Khóa</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-unlock mb-3" style="font-size: 3rem; color: #00ff64;"></i>
+                        <p style="color: #ffffff;">Khôi phục quyền truy cập cho:</p>
+                        <h4 id="unlockTargetName" style="color: #00ff64; font-weight: bold;">---</h4>
+                        <input type="hidden" id="unlockTargetId">
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center" style="border-top: 1px solid rgba(0, 255, 100, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-success" style="background: rgba(0, 255, 100, 0.2); color: #00ff64; border: 1px solid #00ff64;" onclick="executeUnlock()"><i class="fas fa-check me-2"></i>Mở Ngay</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="approveModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(5, 15, 25, 0.95); border: 1px solid #00f2ff;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 242, 255, 0.2);">
+                        <h5 class="modal-title" style="color: #00f2ff; font-weight: 600;"><i class="fas fa-user-check me-2"></i>Phê Duyệt</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-check-circle mb-3" style="font-size: 3rem; color: #00f2ff;"></i>
+                        <p style="color: #ffffff;">Chấp nhận tài khoản tham gia hệ thống:</p>
+                        <h4 id="approveTargetName" style="color: #00f2ff; font-weight: bold;">---</h4>
+                        <input type="hidden" id="approveTargetId">
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center" style="border-top: 1px solid rgba(0, 242, 255, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-info" style="background: rgba(0, 242, 255, 0.2); color: #00f2ff; border: 1px solid #00f2ff;" onclick="executeApprove()"><i class="fas fa-check me-2"></i>Duyệt Ngay</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="pendingOffcanvas" style="background: rgba(10, 15, 20, 0.98); backdrop-filter: blur(20px); border-left: 1px solid #ffc800; width: 400px;">
+            <div class="offcanvas-header" style="border-bottom: 1px solid rgba(255, 200, 0, 0.2);">
+                <h5 class="offcanvas-title" style="color: #ffc800; font-weight: 600;">
+                    <i class="fas fa-user-clock me-2"></i>Danh Sách Chờ Duyệt
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body">
+                <div id="pendingUsersContainer">
+                </div>
+
+                <div id="noPendingMsg" class="text-center mt-5" style="display: none; color: rgba(255,255,255,0.5);">
+                    <i class="fas fa-check-circle mb-3" style="font-size: 3.5rem; color: #00ff64; text-shadow: 0 0 20px #00ff64;"></i>
+                    <p>Mọi thứ đã gọn gàng!<br>Không có tài khoản nào đang chờ duyệt.</p>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Hàm quét bảng và mở Menu trượt (Offcanvas)
+            // 🌟 HÀM QUÉT DANH SÁCH CHỜ DUYỆT BẰNG API (LẤY TẤT CẢ DATA)
+            async function openPendingPanel() {
+                const container = document.getElementById('pendingUsersContainer');
+                const noMsg = document.getElementById('noPendingMsg');
+
+                // Mở Offcanvas và hiện hiệu ứng xoay xoay đang tải
+                container.innerHTML = `
+                    <div class="text-center mt-5">
+                        <div class="spinner-border text-warning" style="width: 3rem; height: 3rem;" role="status"></div>
+                        <p class="mt-3" style="color: #ffc800;">Đang kết nối Database lấy danh sách...</p>
+                    </div>`;
+                noMsg.style.display = 'none';
+                new bootstrap.Offcanvas(document.getElementById('pendingOffcanvas')).show();
+
+                try {
+                    // Gọi ngầm API Frontend -> Backend -> Database
+                    const response = await fetch('/users/pending');
+
+                    if (response.ok) {
+                        const pendingUsers = await response.json(); // Nhận 1 mảng JSON chứa các User PENDING
+                        container.innerHTML = ''; // Xóa vòng xoay
+
+                        if (pendingUsers.length > 0) {
+                            // Dùng vòng lặp nhét data vào thẻ Card
+                            pendingUsers.forEach(u => {
+                                const card = document.createElement('div');
+                                card.className = 'card mb-3';
+                                card.style = 'background: rgba(0,0,0,0.4); border: 1px solid rgba(255,200,0,0.3); border-radius: 12px; transition: all 0.3s;';
+                                card.innerHTML = `
+                                    <div class="card-body d-flex justify-content-between align-items-center p-3">
+                                        <div>
+                                            <h6 style="color: #ffffff; margin:0; font-weight:bold;"><i class="fas fa-user me-2" style="color: #ffc800;"></i>${u.username}</h6>
+                                            <small style="color: rgba(255,255,255,0.6);">${u.fullName ? u.fullName : '---'}</small>
+                                        </div>
+                                        <div class="text-end pending-actions">
+                                            <button class="btn btn-sm btn-outline-info rounded-circle me-1"
+                                                    style="width: 32px; height: 32px; padding: 0;" title="Duyệt tài khoản"
+                                                    onclick="approveUser('${u.id}', '${u.username}')">
+                                                <i class="fas fa-user-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger rounded-circle"
+                                                    style="width: 32px; height: 32px; padding: 0;" title="Xóa vĩnh viễn"
+                                                    onclick="deleteUser('${u.id}', '${u.username}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                                container.appendChild(card);
+                            });
+                        } else {
+                            // Nếu danh sách trống
+                            noMsg.style.display = 'block';
+                        }
+                    } else {
+                        container.innerHTML = `<p class="text-center mt-5" style="color: #ff0032;">Lỗi: ${await response.text()}</p>`;
+                    }
+                } catch (error) {
+                    container.innerHTML = `<p class="text-center mt-5" style="color: #ff0032;"><i class="fas fa-wifi me-2"></i>Mất kết nối máy chủ!</p>`;
+                }
+            }
+
+            // Code xử lý thêm mới User
+            function resetUserModal() {
+                document.getElementById('userName').value = '';
+                document.getElementById('userPass').value = '';
+                document.getElementById('userFullName').value = '';
+                document.getElementById('userPhone').value = '';
+                document.getElementById('userEmail').value = '';
+                document.getElementById('userRole').value = 'STAFF';
+                if(typeof hideModalError === "function") hideModalError();
+            }
+
+            function resetModal() {
+                resetUserModal();
+            }
+
+            async function saveUser() {
+                if(typeof hideModalError === "function") hideModalError();
+
+                const username = document.getElementById('userName').value.trim();
+                const password = document.getElementById('userPass').value.trim();
+                const fullName = document.getElementById('userFullName').value.trim();
+                const phone = document.getElementById('userPhone').value.trim();
+                const email = document.getElementById('userEmail').value.trim();
+                const role = document.getElementById('userRole').value;
+
+                if (!username) {
+                    if(typeof showModalError === "function") showModalError("Tên đăng nhập không được trống!", "userName");
+                    return;
+                }
+                if (!password) {
+                    if(typeof showModalError === "function") showModalError("Vui lòng nhập mật khẩu!", "userPass");
+                    return;
+                }
+
+                const payload = {
+                    username, password, role,
+                    fullName: fullName || null,
+                    phone: phone || null,
+                    email: email || null
+                };
+
+                try {
+                    const response = await fetch('/users/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã tạo tài khoản ACTIVE thành công!");
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click(); else reloadTableData('user-data-container');
+                    } else {
+                        if(typeof showModalError === "function") showModalError(await response.text(), "userName");
+                    }
+                } catch (error) {
+                    if(typeof showModalError === "function") showModalError("Lỗi kết nối máy chủ!", "userName");
+                }
+            }
+
+            // Xóa User
+            function deleteUser(id, username) {
+                document.getElementById('deleteTargetId').value = id;
+                document.getElementById('deleteTargetName').innerText = username;
+                new bootstrap.Modal(document.getElementById('deleteModal')).show();
+            }
+
+            async function executeDelete() {
+                const id = document.getElementById('deleteTargetId').value;
+                try {
+                    const response = await fetch(`/users/delete/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                        // Ẩn luôn Offcanvas nếu đang mở
+                        const offcanvasEl = document.getElementById('pendingOffcanvas');
+                        if(offcanvasEl) {
+                            const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                            if(offcanvasInstance) offcanvasInstance.hide();
+                        }
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã thu hồi tài khoản!");
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click(); else reloadTableData('user-data-container');
+                    } else {
+                        alert(await response.text());
+                    }
+                } catch (error) { console.error(error); }
+            }
+
+            // Khóa User
+            function lockUser(id, username) {
+                document.getElementById('lockTargetId').value = id;
+                document.getElementById('lockTargetName').innerText = username;
+                new bootstrap.Modal(document.getElementById('lockModal')).show();
+            }
+
+            async function executeLock() {
+                const id = document.getElementById('lockTargetId').value;
+                try {
+                    const response = await fetch(`/users/lock/${id}`, { method: 'PUT' });
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('lockModal')).hide();
+                        if(typeof showSuccessToast === "function") showSuccessToast("Tài khoản đã bị Vô hiệu hóa!");
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click(); else reloadTableData('user-data-container');
+                    } else {
+                        alert(await response.text());
+                    }
+                } catch (error) { console.error(error); }
+            }
+
+            // Mở Khóa User
+            function unlockUser(id, username) {
+                document.getElementById('unlockTargetId').value = id;
+                document.getElementById('unlockTargetName').innerText = username;
+                new bootstrap.Modal(document.getElementById('unlockModal')).show();
+            }
+
+            async function executeUnlock() {
+                const id = document.getElementById('unlockTargetId').value;
+                try {
+                    const response = await fetch(`/users/unlock/${id}`, { method: 'PUT' });
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('unlockModal')).hide();
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã ân xá tài khoản thành công!");
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click(); else reloadTableData('user-data-container');
+                    } else {
+                        alert(await response.text());
+                    }
+                } catch (error) { console.error(error); }
+            }
+
+            // Duyệt User
+            function approveUser(id, username) {
+                document.getElementById('approveTargetId').value = id;
+                document.getElementById('approveTargetName').innerText = username;
+                new bootstrap.Modal(document.getElementById('approveModal')).show();
+            }
+
+            async function executeApprove() {
+                const id = document.getElementById('approveTargetId').value;
+                try {
+                    const response = await fetch(`/users/approve/${id}`, { method: 'PUT' });
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('approveModal')).hide();
+                        // Ẩn luôn Offcanvas nếu đang mở
+                        const offcanvasEl = document.getElementById('pendingOffcanvas');
+                        if(offcanvasEl) {
+                            const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                            if(offcanvasInstance) offcanvasInstance.hide();
+                        }
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã duyệt tài khoản thành công!");
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click(); else reloadTableData('user-data-container');
+                    } else {
+                        alert(await response.text());
+                    }
+                } catch (error) { console.error(error); }
+            }
+        </script>
+    </main>
+</div>
+<div th:replace="~{common/scripts :: footer_scripts}"></div>
+</body>
+</html>

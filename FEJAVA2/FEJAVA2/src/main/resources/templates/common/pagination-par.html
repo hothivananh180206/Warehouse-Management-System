@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="pagination_bar(currentPage, totalPages, baseUrl, targetId)" class="mt-4"
+     th:with="
+        startPage=${totalPages <= 3 ? 0 : (currentPage < 2 ? 0 : (currentPage >= totalPages - 2 ? totalPages - 3 : currentPage - 1))},
+        endPage=${totalPages <= 3 ? (totalPages > 0 ? totalPages - 1 : 0) : (currentPage < 2 ? 2 : (currentPage >= totalPages - 2 ? totalPages - 1 : currentPage + 1))}">
+
+    <nav aria-label="Page navigation" th:if="${totalPages > 1}">
+        <ul class="pagination justify-content-center align-items-center gap-2">
+
+            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link border-cyber ajax-page-link"
+                   th:data-target="${targetId}"
+                   th:href="@{${baseUrl}(page=0, keyword=${keyword != null ? keyword : ''}, actionType=${actionType != null and actionType != '' ? actionType : null}, startDate=${startDate != null and startDate != '' ? startDate : null}, endDate=${endDate != null and endDate != '' ? endDate : null})}" title="Trang đầu">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+            </li>
+
+            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link border-cyber ajax-page-link"
+                   th:data-target="${targetId}"
+                   th:href="@{${baseUrl}(page=${currentPage > 0 ? currentPage - 1 : 0}, keyword=${keyword != null ? keyword : ''}, actionType=${actionType != null and actionType != '' ? actionType : null}, startDate=${startDate != null and startDate != '' ? startDate : null}, endDate=${endDate != null and endDate != '' ? endDate : null})}" title="Trang trước">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            </li>
+
+            <li class="page-item"
+                th:each="i : ${#numbers.sequence(startPage, endPage)}"
+                th:classappend="${currentPage == i} ? 'active'">
+                <a class="page-link border-cyber th-page-num ajax-page-link"
+                   th:data-target="${targetId}"
+                   th:href="@{${baseUrl}(page=${i}, keyword=${keyword != null ? keyword : ''}, actionType=${actionType != null and actionType != '' ? actionType : null}, startDate=${startDate != null and startDate != '' ? startDate : null}, endDate=${endDate != null and endDate != '' ? endDate : null})}"
+                   th:text="${i + 1}">1</a>
+            </li>
+
+            <li class="page-item mx-1">
+                <form class="ajax-jump-form d-inline-flex align-items-center"
+                      th:action="${baseUrl}" method="get"
+                      th:data-target="${targetId}">
+
+                    <input type="hidden" name="keyword" th:value="${keyword != null ? keyword : ''}" />
+                    <input th:if="${actionType != null and actionType != ''}" type="hidden" name="actionType" th:value="${actionType}" />
+                    <input th:if="${startDate != null and startDate != ''}" type="hidden" name="startDate" th:value="${startDate}" />
+                    <input th:if="${endDate != null and endDate != ''}" type="hidden" name="endDate" th:value="${endDate}" />
+
+                    <input type="number" name="page" class="form-control text-center jump-page-input border-cyber"
+                           min="1" th:max="${totalPages}" placeholder="Nhập..."
+                           style="width: 85px; height: 38px; background: rgba(5, 5, 5, 0.8); color: #00f2ff; font-weight: 600; border-radius: 8px;" required />
+                </form>
+            </li>
+
+            <li class="page-item" th:if="${endPage < totalPages - 1}">
+                <a class="page-link border-cyber th-page-num ajax-page-link"
+                   th:data-target="${targetId}"
+                   th:href="@{${baseUrl}(page=${totalPages - 1}, keyword=${keyword != null ? keyword : ''}, actionType=${actionType != null and actionType != '' ? actionType : null}, startDate=${startDate != null and startDate != '' ? startDate : null}, endDate=${endDate != null and endDate != '' ? endDate : null})}"
+                   th:text="${totalPages}">9</a>
+            </li>
+
+            <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
+                <a class="page-link border-cyber ajax-page-link"
+                   th:data-target="${targetId}"
+                   th:href="@{${baseUrl}(page=${currentPage < totalPages - 1 ? currentPage + 1 : totalPages - 1}, keyword=${keyword != null ? keyword : ''}, actionType=${actionType != null and actionType != '' ? actionType : null}, startDate=${startDate != null and startDate != '' ? startDate : null}, endDate=${endDate != null and endDate != '' ? endDate : null})}" title="Trang sau">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+            </li>
+
+            <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
+                <a class="page-link border-cyber ajax-page-link"
+                   th:data-target="${targetId}"
+                   th:href="@{${baseUrl}(page=${totalPages - 1}, keyword=${keyword != null ? keyword : ''}, actionType=${actionType != null and actionType != '' ? actionType : null}, startDate=${startDate != null and startDate != '' ? startDate : null}, endDate=${endDate != null and endDate != '' ? endDate : null})}" title="Trang cuối">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+
+        </ul>
+    </nav>
+
+    <style>
+        .border-cyber {
+            background: rgba(20, 20, 35, 0.8) !important;
+            color: #00f2ff !important;
+            border: 1px solid rgba(0, 242, 255, 0.3) !important;
+            transition: all 0.3s ease;
+        }
+        .page-item.active .border-cyber {
+            background: rgba(0, 242, 255, 0.2) !important;
+            color: #fff !important;
+            border-color: #00f2ff !important;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+        }
+        .page-item.disabled .border-cyber {
+            color: rgba(255, 255, 255, 0.2) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            background: rgba(10, 10, 15, 0.5) !important;
+            cursor: not-allowed;
+        }
+        .page-link:hover:not(.disabled) {
+            background: rgba(0, 242, 255, 0.1) !important;
+            border-color: #00f2ff !important;
+            color: #fff !important;
+            transform: translateY(-1px);
+        }
+        .jump-page-input::-webkit-outer-spin-button,
+        .jump-page-input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        .jump-page-input { -moz-appearance: textfield; }
+        .jump-page-input:focus {
+            border-color: #00f2ff !important;
+            box-shadow: 0 0 12px rgba(0, 242, 255, 0.6) !important;
+            outline: none;
+            background: rgba(0, 0, 0, 0.9) !important;
+        }
+        .jump-page-input::placeholder {
+            color: rgba(0, 242, 255, 0.4); font-size: 0.85rem; font-style: italic;
+        }
+    </style>
+</div>
+
+</body>
+</html>

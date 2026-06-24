@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head th:replace="~{common/head :: head_info('Sản Phẩm - Hệ Thống Quản Lý Kho')}"></head>
+
+<body>
+<div id="vanta-canvas"></div>
+
+<div class="container-fluid p-0">
+    <nav th:replace="~{common/sidebar :: sidebar_menu('products')}"></nav>
+
+    <main class="main-content">
+        <div th:replace="~{common/styles}"></div>
+        <div th:replace="~{common/page-header :: top_header('Cơ Sở Dữ Liệu Sản Phẩm', 'Người Điều Hành Hiện Tại')}"></div>
+
+        <div th:replace="~{common/action-bar :: crud_bar('Sản Phẩm', 'Tìm tên sản phẩm...')}"></div>
+
+        <div id="product-data-container">
+            <div th:replace="~{common/table-card :: ajax_data_grid(
+                ~{::table},
+                ~{common/pagination-par :: pagination_bar(${currentPage}, ${totalPages}, '/products', 'product-data-container')}
+            )}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th><i class="fas fa-hashtag" style="margin-right: 8px;"></i>STT</th>
+                        <th><i class="fas fa-image" style="margin-right: 8px;"></i>Hình Ảnh</th>
+                        <th><i class="fas fa-box" style="margin-right: 8px;"></i>Tên Sản Phẩm</th>
+                        <th><i class="fas fa-tags" style="margin-right: 8px;"></i>Danh Mục</th>
+                        <th><i class="fas fa-arrow-down" style="margin-right: 8px;"></i>Giá Nhập</th>
+                        <th><i class="fas fa-arrow-up" style="margin-right: 8px;"></i>Giá Bán</th>
+                        <th><i class="fas fa-warehouse" style="margin-right: 8px;"></i>Tồn Kho</th>
+                        <th><i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>Ngưỡng</th>
+                        <th><i class="fas fa-info-circle" style="margin-right: 8px;"></i>Trạng Thái</th>
+                        <th th:if="${session.ROLE == 'ADMIN'}" class="text-end"><i class="fas fa-cogs" style="margin-right: 8px;"></i>Thao Tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="p, iterStat : ${list}">
+                        <td th:text="${(currentPage * pageSize) + iterStat.count}" style="color: rgba(0, 242, 255, 0.7);"></td>
+                        <td>
+                            <div th:if="${p.imagePath == null || p.imagePath.isEmpty()}" 
+                                 style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                                 <i class="fas fa-image" style="color: rgba(255,255,255,0.2); font-size: 1.2rem;"></i>
+                            </div>
+                             <img th:if="${p.imagePath != null && !p.imagePath.isEmpty()}" 
+                                  th:src="'http://localhost:8080/uploads/' + ${p.imagePath}" 
+                                  style="width: 45px; height: 45px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(0, 242, 255, 0.3); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); cursor: pointer; transition: all 0.2s;" 
+                                  onclick="showLightbox(this.src)"
+                                  class="product-thumb" />
+                        </td>
+                        <td th:text="${p.name}" style="color: #e0e0e0; font-weight: 600;"></td>
+                        <td>
+                            <span class="badge" style="background: rgba(112, 0, 255, 0.2); color: #b366ff; border: 1px solid rgba(112, 0, 255, 0.4);"
+                                  th:text="${p.categoryId != null and categoryMap != null and categoryMap.containsKey(p.categoryId) ? categoryMap[p.categoryId] : 'Chưa phân loại'}">
+                            </span>
+                        </td>
+                        <td class="price-tag" th:text="${#numbers.formatDecimal(p.importPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                        <td class="price-tag" th:text="${#numbers.formatDecimal(p.exportPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+
+                        <td>
+                            <span class="qty-tag" th:text="${p.quantity}"></span>
+                        </td>
+
+                        <td>
+                            <span class="qty-tag" style="color: #ffaa00; border-color: rgba(255, 170, 0, 0.3);" th:text="${p.minQuantity}"></span>
+                        </td>
+
+                        <td>
+                            <span th:if="${p.quantity <= 0}" class="badge" style="background: rgba(255, 0, 60, 0.2); color: #ff003c; border: 1px solid rgba(255, 0, 60, 0.4);">
+                                <i class="fas fa-times-circle me-1"></i>Hết hàng
+                            </span>
+                            <span th:if="${p.quantity > 0 and p.quantity <= p.minQuantity}" class="badge" style="background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.4);">
+                                <i class="fas fa-exclamation-circle me-1"></i>Sắp hết
+                            </span>
+                            <span th:if="${p.quantity > p.minQuantity}" class="badge" style="background: rgba(0, 255, 170, 0.2); color: #00ffaa; border: 1px solid rgba(0, 255, 170, 0.4);">
+                                <i class="fas fa-check-circle me-1"></i>Còn hàng
+                            </span>
+                        </td>
+
+                        <td th:if="${session.ROLE == 'ADMIN'}" class="text-end">
+                            <button class="btn btn-sm btn-outline-info rounded-circle me-1"
+                                    style="width: 32px; height: 32px; padding: 0;"
+                                    th:data-id="${p.id}"
+                                    th:data-name="${p.name}"
+                                    th:data-cat="${p.categoryId}"
+                                    th:data-import="${p.importPrice}"
+                                    th:data-export="${p.exportPrice}"
+                                    th:data-qty="${p.quantity}"
+                                    th:data-min="${p.minQuantity}"
+                                    th:data-image="${p.imagePath}"
+                                    onclick="openEditModal(this.dataset.id, this.dataset.name, this.dataset.cat, this.dataset.import, this.dataset.export, this.dataset.qty, this.dataset.min, this.dataset.image)">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger rounded-circle"
+                                    style="width: 32px; height: 32px; padding: 0;"
+                                    th:data-id="${p.id}"
+                                    th:data-name="${p.name}"
+                                    onclick="deleteProduct(this.dataset.id, this.dataset.name)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="modal fade" id="crudModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content" style="background: rgba(10, 15, 20, 0.95); backdrop-filter: blur(20px); border: 1px solid #00f2ff; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 242, 255, 0.2);">
+                        <h5 class="modal-title" id="modalTitle" style="color: #00f2ff; font-weight: 600; font-family: 'Poppins', sans-serif;">
+                            <i class="fas fa-box-open me-2"></i>Thêm Sản Phẩm Mới
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <input type="hidden" id="prodId">
+
+                        <div class="row">
+                            <div class="col-md-6" id="mainFieldsColumn">
+                                <div class="mb-3">
+                                    <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Tên sản phẩm (*)</label>
+                                    <input type="text" id="prodName" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5); transition: all 0.3s;" placeholder="Ví dụ: Bàn phím cơ...">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Danh mục</label>
+                                    <select id="prodCategory" class="form-select border-cyber text-white" style="background: rgba(0,0,0,0.5);">
+                                        <option value="">-- Chọn danh mục --</option>
+                                        <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Số lượng cảnh báo (Ngưỡng)</label>
+                                    <input type="number" id="prodMinQty" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5);" value="5" min="0">
+                                </div>
+                                <div class="mb-3">
+                                     <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Hình ảnh sản phẩm</label>
+                                     <div class="d-flex align-items-center gap-2">
+                                         <label class="btn btn-cyber" style="cursor: pointer; margin: 0; padding: 6px 15px; font-size: 0.85rem; border: 1px solid #00f2ff; background: rgba(0, 242, 255, 0.1); color: #00f2ff; border-radius: 4px; transition: all 0.3s; display: inline-flex; align-items: center; text-shadow: 0 0 5px rgba(0, 242, 255, 0.5);">
+                                             <i class="fas fa-upload me-2"></i>Chọn ảnh...
+                                             <input type="file" id="prodImage" style="display: none;" accept="image/*" onchange="previewImage(event)">
+                                         </label>
+                                         <span id="fileNameDisplay" style="color: rgba(255,255,255,0.5); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">Chưa chọn tệp...</span>
+                                     </div>
+                                     <div class="mt-2 text-center" style="position: relative;">
+                                         <img id="imagePreview" src="" style="max-width: 120px; max-height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(0, 242, 255, 0.3); display: none; margin: 0 auto; box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);" />
+                                     </div>
+                                 </div>
+                            </div>
+
+                            <div class="col-md-6" id="autoCalculatedFields">
+                                <div class="mb-3">
+                                    <label class="form-label" style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">Giá Nhập (VNĐ) - Tự động tính</label>
+                                    <input type="number" id="prodImport" class="form-control border-cyber text-white-50" style="background: rgba(255,255,255,0.05); cursor: not-allowed;" value="0" min="0" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">Giá Bán (VNĐ) - Tự động tính</label>
+                                    <input type="number" id="prodExport" class="form-control border-cyber text-white-50" style="background: rgba(255,255,255,0.05); cursor: not-allowed;" value="0" min="0" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">Tồn kho hiện tại - Tự động tính</label>
+                                    <input type="number" id="prodQty" class="form-control border-cyber text-white-50" style="background: rgba(255,255,255,0.05); cursor: not-allowed;" value="0" min="0" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer" style="border-top: 1px solid rgba(0, 242, 255, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy Bỏ</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-success" onclick="saveProduct()">
+                            <i class="fas fa-save me-2"></i>Lưu Dữ Liệu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(15, 5, 5, 0.95); backdrop-filter: blur(20px); border: 1px solid #ff003c; box-shadow: 0 0 30px rgba(255, 0, 60, 0.2);">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(255, 0, 60, 0.2);">
+                        <h5 class="modal-title" style="color: #ff003c; font-weight: 600; font-family: 'Poppins', sans-serif;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Cảnh Báo
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-trash-alt mb-3" style="font-size: 3rem; color: #ff003c; text-shadow: 0 0 15px rgba(255,0,60,0.6);"></i>
+                        <p style="color: #ffffff; font-size: 1rem; margin-bottom: 5px;">Xác nhận xóa sản phẩm?</p>
+                        <h4 id="deleteTargetName" style="color: #ff003c; font-weight: bold; text-shadow: 0 0 10px rgba(255, 0, 60, 0.5);">---</h4>
+                        <input type="hidden" id="deleteTargetId">
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center" style="border-top: 1px solid rgba(255, 0, 60, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Quay Lại</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-danger" onclick="executeDelete()">
+                            Xác Nhận Xóa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal xem ảnh lớn (Cyberpunk Image Lightbox) -->
+        <div class="modal fade" id="imageLightboxModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-md">
+                <div class="modal-content" style="background: rgba(10, 15, 20, 0.95); backdrop-filter: blur(25px); border: 1px solid #00f2ff; box-shadow: 0 0 35px rgba(0, 242, 255, 0.3);">
+                    <div class="modal-header" style="border-bottom: none; padding-bottom: 0;">
+                        <h6 style="color: #00f2ff; font-family: 'Poppins', sans-serif; margin: 0;"><i class="fas fa-eye me-2"></i>Xem Hình Ảnh Sản Phẩm</h6>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center p-4">
+                        <img id="lightboxImage" src="" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; border: 1px solid rgba(0, 242, 255, 0.5); box-shadow: 0 0 25px rgba(0,242,255,0.25);" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    select option { background: rgba(10, 15, 20, 0.95); color: #00f2ff; }
+                    .product-thumb:hover { transform: scale(1.15); border-color: #00f2ff !important; box-shadow: 0 0 15px rgba(0, 242, 255, 0.5) !important; }
+                `;
+                document.head.appendChild(style);
+            });
+
+            function showLightbox(src) {
+                const lightboxImg = document.getElementById('lightboxImage');
+                if (lightboxImg) {
+                    lightboxImg.src = src;
+                    var lightBox = new bootstrap.Modal(document.getElementById('imageLightboxModal'));
+                    lightBox.show();
+                }
+            }
+
+            function previewImage(event) {
+                const file = event.target.files[0];
+                const preview = document.getElementById('imagePreview');
+                const fileNameDisplay = document.getElementById('fileNameDisplay');
+                if (file) {
+                    if (fileNameDisplay) fileNameDisplay.innerText = file.name;
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    const currentImage = preview.dataset.currentImage;
+                    if (fileNameDisplay) {
+                        fileNameDisplay.innerText = (currentImage && currentImage !== 'null') ? currentImage : 'Chưa chọn tệp...';
+                    }
+                    if (currentImage) {
+                        preview.src = 'http://localhost:8080/uploads/' + currentImage;
+                        preview.style.display = 'block';
+                    } else {
+                        preview.src = '';
+                        preview.style.display = 'none';
+                    }
+                }
+            }
+
+            function resetProductModal() {
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Thêm Sản Phẩm Mới';
+                document.getElementById('prodId').value = '';
+                document.getElementById('prodName').value = '';
+                document.getElementById('prodCategory').value = '';
+                document.getElementById('prodImport').value = '0';
+                document.getElementById('prodExport').value = '0';
+                document.getElementById('prodQty').value = '0';
+                document.getElementById('prodMinQty').value = '5';
+                document.getElementById('prodImage').value = '';
+                
+                const fileNameDisplay = document.getElementById('fileNameDisplay');
+                if (fileNameDisplay) fileNameDisplay.innerText = 'Chưa chọn tệp...';
+                
+                const preview = document.getElementById('imagePreview');
+                preview.src = '';
+                preview.style.display = 'none';
+                preview.dataset.currentImage = '';
+                
+                // Ẩn các cột tự động tính toán & cho cột nhập liệu hiển thị full-width
+                document.getElementById('autoCalculatedFields').style.display = 'none';
+                document.getElementById('mainFieldsColumn').className = 'col-12';
+                
+                if(typeof hideModalError === "function") hideModalError();
+            }
+
+            function resetModal() {
+                resetProductModal();
+            }
+
+            function openEditModal(id, name, catId, importP, exportP, qty, minQty, imagePath) {
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-pen me-2"></i>Cập Nhật Sản Phẩm';
+                document.getElementById('prodId').value = id;
+                document.getElementById('prodName').value = name;
+                document.getElementById('prodCategory').value = catId || '';
+
+                // Ép kiểu Number để trị dứt điểm cái mã khoa học 4.5E7
+                document.getElementById('prodImport').value = Number(importP);
+                document.getElementById('prodExport').value = Number(exportP);
+
+                document.getElementById('prodQty').value = qty;
+                document.getElementById('prodMinQty').value = minQty;
+
+                document.getElementById('prodImage').value = '';
+                
+                const fileNameDisplay = document.getElementById('fileNameDisplay');
+                if (fileNameDisplay) {
+                    fileNameDisplay.innerText = (imagePath && imagePath !== 'null' && imagePath !== 'undefined' && imagePath.trim() !== '') ? imagePath : 'Chưa chọn tệp...';
+                }
+                
+                const preview = document.getElementById('imagePreview');
+                if (imagePath && imagePath !== 'null' && imagePath !== 'undefined' && imagePath.trim() !== '') {
+                    preview.src = 'http://localhost:8080/uploads/' + imagePath;
+                    preview.style.display = 'block';
+                    preview.dataset.currentImage = imagePath;
+                } else {
+                    preview.src = '';
+                    preview.style.display = 'none';
+                    preview.dataset.currentImage = '';
+                }
+                
+                // Hiện lại các cột tự động tính toán & đưa cột nhập liệu về lại col-md-6
+                document.getElementById('autoCalculatedFields').style.display = 'block';
+                document.getElementById('mainFieldsColumn').className = 'col-md-6';
+                
+                if(typeof hideModalError === "function") hideModalError();
+
+                var myModal = new bootstrap.Modal(document.getElementById('crudModal'));
+                myModal.show();
+            }
+
+            async function saveProduct() {
+                if(typeof hideModalError === "function") hideModalError();
+
+                const id = document.getElementById('prodId').value;
+                const name = document.getElementById('prodName').value.trim();
+                const categoryId = document.getElementById('prodCategory').value;
+
+                if (!name) {
+                    if(typeof showModalError === "function") showModalError("Tên sản phẩm không được để trống!", "prodName");
+                    else alert("Tên sản phẩm không được để trống!");
+                    return;
+                }
+
+                const imageFile = document.getElementById('prodImage').files[0];
+                let imagePath = document.getElementById('imagePreview').dataset.currentImage || '';
+
+                if (imageFile) {
+                    const formData = new FormData();
+                    formData.append('file', imageFile);
+                    try {
+                        const uploadResponse = await fetch('/products/upload-image', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        if (uploadResponse.ok) {
+                            imagePath = await uploadResponse.text();
+                        } else {
+                            const errText = await uploadResponse.text();
+                            if(typeof showModalError === "function") showModalError("Lỗi tải ảnh: " + errText, "prodImage");
+                            else alert("Lỗi tải ảnh: " + errText);
+                            return;
+                        }
+                    } catch (uploadErr) {
+                        if(typeof showModalError === "function") showModalError("Không thể kết nối máy chủ để tải ảnh!", "prodImage");
+                        return;
+                    }
+                }
+
+                const payload = {
+                    id: id ? parseInt(id) : null,
+                    name: name,
+                    categoryId: categoryId ? parseInt(categoryId) : null,
+                    importPrice: parseFloat(document.getElementById('prodImport').value) || 0,
+                    exportPrice: parseFloat(document.getElementById('prodExport').value) || 0,
+                    quantity: parseInt(document.getElementById('prodQty').value) || 0,
+                    minQuantity: parseInt(document.getElementById('prodMinQty').value) || 0,
+                    imagePath: imagePath
+                };
+
+                try {
+                    const response = await fetch('/products/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã lưu thông tin sản phẩm thành công!");
+
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click();
+                        else reloadTableData('product-data-container');
+                    } else {
+                        const errText = await response.text();
+                        if(typeof showModalError === "function") showModalError(errText, "prodName");
+                        else alert(errText);
+                    }
+                } catch (error) {
+                    if(typeof showModalError === "function") showModalError("Không thể kết nối máy chủ Frontend!", "prodName");
+                }
+            }
+
+            function deleteProduct(id, name) {
+                document.getElementById('deleteTargetId').value = id;
+                document.getElementById('deleteTargetName').innerText = name;
+                var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                deleteModal.show();
+            }
+
+            async function executeDelete() {
+                const id = document.getElementById('deleteTargetId').value;
+                try {
+                    const response = await fetch(`/products/delete/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã xóa sản phẩm thành công!");
+
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click();
+                        else reloadTableData('product-data-container');
+                    } else {
+                        alert("Xóa thất bại!");
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        </script>
+    </main>
+</div>
+
+<div th:replace="~{common/scripts :: footer_scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Standard CRUD Action Bar for Product, Stock In, Stock Out, etc. -->
+<div th:fragment="crud_bar(pageType, placeholderText)" class="action-bar-container mb-4">
+    <div class="row align-items-center g-3">
+
+        <div class="col-md-5 col-lg-4">
+            <div class="cyber-search-group">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text"
+                       class="form-control cyber-input search-input"
+                       th:placeholder="${placeholderText}"
+                       th:value="${keyword}">
+                <div class="input-glow"></div>
+            </div>
+        </div>
+
+        <div class="col-md-7 col-lg-8 text-md-end">
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+
+                <button th:if="${pageType == 'Tài Khoản'}"
+                        class="btn btn-cyber btn-cyber-info"
+                        onclick="openPendingPanel()">
+                    <i class="fas fa-user-clock me-2"></i>Chờ Duyệt
+                </button>
+
+                <button th:if="${session.ROLE == 'ADMIN' and pageType == 'Phiếu Nhập'}"
+                        class="btn btn-cyber btn-cyber-warning"
+                        onclick="openPendingStockInPanel()">
+                    <i class="fas fa-file-signature me-2"></i>Chờ Duyệt
+                </button>
+
+                <button th:if="${session.ROLE == 'ADMIN' and pageType == 'Phiếu Xuất'}"
+                        class="btn btn-cyber btn-cyber-warning"
+                        onclick="openPendingStockOutPanel()">
+                    <i class="fas fa-hourglass-half me-2"></i>Chờ Duyệt
+                </button>
+
+                <button th:if="${session.ROLE == 'ADMIN' or (pageType != 'Sản Phẩm' and pageType != 'Khách Hàng' and pageType != 'Nhà Cung Cấp' and pageType != 'Danh Mục')}"
+                        class="btn btn-cyber btn-cyber-success"
+                        data-bs-toggle="modal"
+                        data-bs-target="#crudModal"
+                        onclick="resetModal()">
+                    <i class="fas fa-plus-circle me-2"></i>Thêm <span th:text="${pageType}"></span>
+                </button>
+
+                <button th:if="${pageType == 'Phiếu Nhập' || pageType == 'Phiếu Xuất'}"
+                        class="btn btn-cyber btn-cyber-outline"
+                        data-bs-toggle="modal"
+                        data-bs-target="#exportExcelModal">
+                    <i class="fas fa-file-export me-2"></i>Xuất Excel
+                </button>
+
+                <button th:if="${pageType != 'Phiếu Nhập' && pageType != 'Phiếu Xuất'}"
+                        class="btn btn-cyber btn-cyber-outline"
+                        th:data-pagetype="${pageType}"
+                        onclick="triggerDirectExcelExport(this)">
+                    <i class="fas fa-file-export me-2"></i>Xuất Excel
+                </button>
+
+                <button class="btn btn-cyber btn-cyber-secondary" onclick="window.location.reload()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+    <script th:inline="javascript">
+        function triggerDirectExcelExport(btn) {
+            const pageType = btn.getAttribute('data-pagetype');
+            let endpoint = '';
+            if (pageType === 'Sản Phẩm') endpoint = 'products';
+            else if (pageType === 'Danh Mục') endpoint = 'categories';
+            else if (pageType === 'Khách Hàng') endpoint = 'customers';
+            else if (pageType === 'Nhà Cung Cấp') endpoint = 'suppliers';
+            else if (pageType === 'Tài Khoản') endpoint = 'users';
+
+            if (!endpoint) {
+                if (typeof showCyberAlert === 'function') {
+                    showCyberAlert('Trang này chưa được hỗ trợ xuất Excel!', 'warning');
+                } else {
+                    alert('Trang này chưa được hỗ trợ xuất Excel!');
+                }
+                return;
+            }
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Đang xuất...';
+
+            setTimeout(() => {
+                window.location.href = '/api/export/' + endpoint;
+                
+                // Trả lại trạng thái bình thường sau 1.5s
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    if (typeof showCyberAlert === 'function') {
+                        showCyberAlert('Báo cáo Excel đang được tải xuống!', 'success');
+                    }
+                }, 1000);
+            }, 500);
+        }
+    </script>
+</div>
+
+<!-- Standard Audit Log Action & Filter Bar (Fully Blue Cyan Theme) -->
+<div th:fragment="audit_bar()" class="action-bar-container mb-4" style="background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(0, 242, 255, 0.2); box-shadow: 0 0 15px rgba(0, 242, 255, 0.05); border-radius: 16px; padding: 1.2rem;">
+    <form id="filterForm" onsubmit="filterAuditLogs(event)">
+        <div class="row align-items-center g-3">
+            
+            <!-- Search Box (Standard Blue Cyan) -->
+            <div class="col-lg-3 col-md-6">
+                <div class="cyber-search-group">
+                    <i class="fas fa-search search-icon" style="color: #00f2ff; text-shadow: 0 0 8px rgba(0, 242, 255, 0.8);"></i>
+                    <input type="text"
+                           name="keyword"
+                           class="form-control cyber-input"
+                           placeholder="Tìm nhân viên, mô tả..."
+                           th:value="${keyword}"
+                           oninput="debounceFilterAuditLogs()">
+                    <div class="input-glow"></div>
+                </div>
+            </div>
+            
+            <!-- Activity Category Filter (Fully Blue Cyan) -->
+            <div class="col-lg-3 col-md-6">
+                <div class="cyber-search-group">
+                    <i class="fas fa-filter search-icon" style="color: #00f2ff; text-shadow: 0 0 8px rgba(0, 242, 255, 0.8);"></i>
+                    <select name="actionType" class="form-select cyber-input" style="padding-left: 45px !important;" onchange="filterAuditLogs(event)">
+                        <option value="">-- Tất cả hoạt động --</option>
+                        <option value="CREATE_PRODUCT" th:selected="${actionType == 'CREATE_PRODUCT'}">Thêm sản phẩm mới</option>
+                        <option value="UPDATE_PRODUCT" th:selected="${actionType == 'UPDATE_PRODUCT'}">Sửa sản phẩm</option>
+                        <option value="DELETE_PRODUCT" th:selected="${actionType == 'DELETE_PRODUCT'}">Xóa sản phẩm</option>
+                        <option value="CREATE_CUSTOMER" th:selected="${actionType == 'CREATE_CUSTOMER'}">Thêm khách hàng</option>
+                        <option value="UPDATE_CUSTOMER" th:selected="${actionType == 'UPDATE_CUSTOMER'}">Sửa khách hàng</option>
+                        <option value="DELETE_CUSTOMER" th:selected="${actionType == 'DELETE_CUSTOMER'}">Xóa khách hàng</option>
+                        <option value="CREATE_SUPPLIER" th:selected="${actionType == 'CREATE_SUPPLIER'}">Thêm nhà cung cấp</option>
+                        <option value="UPDATE_SUPPLIER" th:selected="${actionType == 'UPDATE_SUPPLIER'}">Sửa nhà cung cấp</option>
+                        <option value="DELETE_SUPPLIER" th:selected="${actionType == 'DELETE_SUPPLIER'}">Xóa nhà cung cấp</option>
+                        <option value="CREATE_STOCK_IN" th:selected="${actionType == 'CREATE_STOCK_IN'}">Lập phiếu nhập kho</option>
+                        <option value="APPROVE_STOCK_IN" th:selected="${actionType == 'APPROVE_STOCK_IN'}">Duyệt nhập kho</option>
+                        <option value="CANCEL_STOCK_IN" th:selected="${actionType == 'CANCEL_STOCK_IN'}">Hủy phiếu nhập</option>
+                        <option value="CREATE_STOCK_OUT" th:selected="${actionType == 'CREATE_STOCK_OUT'}">Lập phiếu xuất kho</option>
+                        <option value="APPROVE_STOCK_OUT" th:selected="${actionType == 'APPROVE_STOCK_OUT'}">Duyệt xuất kho</option>
+                        <option value="CANCEL_STOCK_OUT" th:selected="${actionType == 'CANCEL_STOCK_OUT'}">Hủy phiếu xuất</option>
+                        <option value="CREATE_USER" th:selected="${actionType == 'CREATE_USER'}">Tạo nhân viên mới</option>
+                    </select>
+                    <div class="input-glow"></div>
+                </div>
+            </div>
+            
+            <!-- Date Pickers & Actions (Fully Blue Cyan) -->
+            <div class="col-lg-6 col-md-12">
+                <div class="row g-2 align-items-center">
+                    <div class="col-sm-4">
+                        <div class="cyber-search-group">
+                            <i class="fas fa-calendar-alt search-icon" style="color: #00f2ff; text-shadow: 0 0 8px rgba(0, 242, 255, 0.8);"></i>
+                            <input type="date" name="startDate" th:value="${startDate}" class="form-control cyber-input" style="padding-left: 45px !important;" onchange="filterAuditLogs(event)">
+                            <div class="input-glow"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="cyber-search-group">
+                            <i class="fas fa-calendar-alt search-icon" style="color: #00f2ff; text-shadow: 0 0 8px rgba(0, 242, 255, 0.8);"></i>
+                            <input type="date" name="endDate" th:value="${endDate}" class="form-control cyber-input" style="padding-left: 45px !important;" onchange="filterAuditLogs(event)">
+                            <div class="input-glow"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-cyber btn-cyber-outline w-100"><i class="fas fa-filter me-2"></i>Lọc</button>
+                        <a href="/audit-logs" class="btn btn-cyber btn-cyber-secondary"><i class="fas fa-sync"></i></a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

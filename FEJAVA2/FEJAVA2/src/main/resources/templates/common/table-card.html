@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="table_card(content)" class="cyber-table-card">
+    <th:block th:replace="${content}"></th:block>
+</div>
+
+<div th:fragment="ajax_data_grid(tableContent, paginationContent)">
+    <div class="cyber-table-card">
+        <th:block th:replace="${tableContent}"></th:block>
+    </div>
+    <th:block th:replace="${paginationContent}"></th:block>
+</div>
+
+</body>
+</html>

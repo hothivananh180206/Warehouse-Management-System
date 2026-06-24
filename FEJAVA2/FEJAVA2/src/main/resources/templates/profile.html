@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head th:replace="~{common/head :: head_info('Hồ Sơ Cá Nhân - Hệ Thống Quản Lý Kho')}"></head>
+
+<body>
+<div id="vanta-canvas"></div>
+
+<div class="container-fluid p-0">
+
+  <!-- Sidebar -->
+  <nav th:replace="~{common/sidebar :: sidebar_menu('profile')}"></nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div th:replace="~{common/styles}"></div>
+
+    <!-- Header -->
+    <div th:replace="~{common/page-header :: top_header('Thông Tin Cá Nhân', 'Hồ Sơ ')}"></div>
+
+    <div class="row g-4">
+      <!-- Cột Trái: Hồ Sơ Đặc Vụ (Read-Only) -->
+      <div class="col-xl-5 col-lg-6">
+        <div class="content-card p-4">
+          <div class="d-flex align-items-center mb-4 pb-3 border-bottom-cyber">
+            <!-- Icon Avatar Neon -->
+            <div class="cyber-avatar-icon me-3">
+              <span th:text="${#strings.substring(user.fullName != null ? user.fullName : 'U', 0, 1).toUpperCase()}">A</span>
+            </div>
+            <div>
+              <h4 class="cyber-user-name mb-1" th:text="${user.fullName}">Tên Nhân Viên</h4>
+              <p class="cyber-username-tag mb-0">@<span th:text="${user.username}">username</span></p>
+            </div>
+          </div>
+
+          <!-- Danh sách thông tin chi tiết -->
+          <div class="cyber-details-list">
+            <div class="detail-item mb-3">
+              <label class="cyber-detail-label">Tên Đăng Nhập</label>
+              <div class="cyber-detail-value" th:text="${user.username}">username</div>
+            </div>
+            
+            <div class="detail-item mb-3">
+              <label class="cyber-detail-label">Họ và Tên</label>
+              <div class="cyber-detail-value" th:text="${user.fullName}">fullName</div>
+            </div>
+
+            <div class="detail-item mb-3">
+              <label class="cyber-detail-label">Chức Vụ Hệ Thống</label>
+              <div class="cyber-detail-value">
+                <span th:if="${user.role == 'ADMIN'}" class="badge-cyber badge-admin-role">
+                  <i class="fas fa-user-shield me-1"></i> QUẢN TRỊ VIÊN
+                </span>
+                <span th:if="${user.role != 'ADMIN'}" class="badge-cyber badge-staff-role">
+                  <i class="fas fa-user me-1"></i> NHÂN VIÊN
+                </span>
+              </div>
+            </div>
+
+            <div class="detail-item mb-3">
+              <label class="cyber-detail-label">Hòm Thư Liên Lạc</label>
+              <div class="cyber-detail-value text-break" th:text="${user.email}">email@domain.com</div>
+            </div>
+
+            <div class="detail-item mb-3">
+              <label class="cyber-detail-label">Số Điện Thoại</label>
+              <div class="cyber-detail-value" th:text="${user.phone}">phone</div>
+            </div>
+
+            <div class="detail-item">
+              <label class="cyber-detail-label">Trạng Thái Tài Khoản</label>
+              <div class="cyber-detail-value">
+                <span class="badge-cyber badge-active-status">
+                  <i class="fas fa-circle-notch fa-spin me-1"></i> ĐANG HOẠT ĐỘNG
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cột Phải: Thay Đổi Mật Khẩu -->
+      <div class="col-xl-7 col-lg-6">
+        <div class="content-card p-4">
+          <div class="d-flex align-items-center mb-4 pb-3 border-bottom-cyber">
+            <i class="fas fa-shield-alt text-cyber-blue fa-2x me-3"></i>
+            <h4 class="m-0 text-cyber-blue font-weight-bold" style="letter-spacing: 1px;">THAY ĐỔI MÃ KHÓA BẢO MẬT</h4>
+          </div>
+
+          <form id="passwordForm" onsubmit="handleChangePassword(event)">
+            <div class="mb-3">
+              <label for="oldPassword" class="cyber-label">Mật Khẩu Hiện Tại</label>
+              <input type="password" id="oldPassword" class="form-control cyber-input" required placeholder="••••••••">
+            </div>
+            
+            <div class="mb-3">
+              <label for="newPassword" class="cyber-label">Mật Khẩu Mới</label>
+              <input type="password" id="newPassword" class="form-control cyber-input" required placeholder="••••••••" oninput="analyzePasswordStrength(this.value)">
+              
+              <!-- Thang đo độ mạnh mật khẩu -->
+              <div class="mt-2">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="text-muted-cyber" style="font-size: 0.8rem;">Độ mạnh mã khóa:</span>
+                  <span id="strength-label" class="badge-cyber badge-strength-none">Chưa Nhập</span>
+                </div>
+                <div class="strength-bar-container">
+                  <div id="strength-bar" class="strength-bar-fill"></div>
+                </div>
+                <div class="strength-hints mt-2">
+                  <small class="text-muted-cyber d-block" id="hint-len"><i class="far fa-circle me-1"></i>Tối thiểu 6 ký tự</small>
+                  <small class="text-muted-cyber d-block" id="hint-num"><i class="far fa-circle me-1"></i>Có chữ số (0-9)</small>
+                  <small class="text-muted-cyber d-block" id="hint-spec"><i class="far fa-circle me-1"></i>Có ký tự đặc biệt (@, #, $, ...)</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="confirmPassword" class="cyber-label">Xác Nhận Mật Khẩu Mới</label>
+              <input type="password" id="confirmPassword" class="form-control cyber-input" required placeholder="••••••••">
+            </div>
+
+            <div class="text-end">
+              <button type="submit" class="cyber-btn w-100 py-3">
+                <i class="fas fa-key me-2"></i>CẬP NHẬT MÃ KHÓA MỚI
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- KHỐI CSS TỰ CHỈNH (Được SPA tự động nạp vì nằm bên trong main-content) -->
+    <style>
+    /* CSS CYBERPUNK SLIM THEME */
+    :root {
+      --cyber-blue: #00f2ff;
+      --cyber-purple: #7000ff;
+      --cyber-red: #ff003c;
+      --cyber-green: #00ffaa;
+      --cyber-dark-card: rgba(6, 12, 18, 0.85);
+      --cyber-glow-blue: 0 0 15px rgba(0, 242, 255, 0.4);
+    }
+
+    /* Overrides */
+    .content-card {
+      background: var(--cyber-dark-card) !important;
+      border: 1px solid rgba(0, 242, 255, 0.2) !important;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 242, 255, 0.04) !important;
+      transition: all 0.3s ease;
+    }
+
+    .content-card:hover {
+      box-shadow: 0 0 40px rgba(0, 242, 255, 0.15), inset 0 0 20px rgba(0, 242, 255, 0.06) !important;
+      transform: translateY(-2px);
+    }
+
+    .border-bottom-cyber {
+      border-bottom: 1px solid rgba(0, 242, 255, 0.15);
+    }
+
+    .text-cyber-blue {
+      color: var(--cyber-blue) !important;
+      text-shadow: var(--cyber-glow-blue);
+    }
+
+    /* Left Column Details List styling */
+    .cyber-avatar-icon {
+      width: 65px;
+      height: 65px;
+      background: radial-gradient(circle, rgba(0, 242, 255, 0.15) 0%, rgba(0, 0, 0, 0.9) 100%);
+      border: 2px solid var(--cyber-blue);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--cyber-blue);
+      text-shadow: var(--cyber-glow-blue);
+      box-shadow: var(--cyber-glow-blue);
+    }
+
+    .cyber-user-name {
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .cyber-username-tag {
+      color: var(--cyber-blue);
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+
+    .cyber-detail-label {
+      color: rgba(0, 242, 255, 0.5);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .cyber-detail-value {
+      color: #fff;
+      font-size: 0.95rem;
+      font-family: 'Poppins', sans-serif;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(0, 242, 255, 0.1);
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+
+    .badge-cyber {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .badge-admin-role {
+      background: rgba(0, 242, 255, 0.1) !important;
+      border: 1px solid var(--cyber-blue) !important;
+      color: var(--cyber-blue) !important;
+    }
+
+    .badge-staff-role {
+      background: rgba(112, 0, 255, 0.1) !important;
+      border: 1px solid var(--cyber-purple) !important;
+      color: #c8a2ff !important;
+    }
+
+    .badge-active-status {
+      background: rgba(0, 255, 170, 0.1) !important;
+      border: 1px solid var(--cyber-green) !important;
+      color: var(--cyber-green) !important;
+      box-shadow: inset 0 0 5px rgba(0, 255, 170, 0.2) !important;
+    }
+
+    /* Password Input overrides */
+    .cyber-label {
+      color: var(--cyber-blue);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .cyber-input {
+      background: rgba(0, 0, 0, 0.4) !important;
+      border: 1px solid rgba(0, 242, 255, 0.25) !important;
+      color: #fff !important;
+      border-radius: 6px !important;
+      padding: 10px 15px !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .cyber-input:focus {
+      border-color: var(--cyber-blue) !important;
+      box-shadow: 0 0 15px rgba(0, 242, 255, 0.25) !important;
+      background: rgba(0, 242, 255, 0.04) !important;
+      outline: none !important;
+    }
+
+    .text-muted-cyber {
+      color: rgba(0, 242, 255, 0.45) !important;
+      font-size: 0.8rem;
+    }
+
+    .cyber-btn {
+      background: linear-gradient(135deg, var(--cyber-blue) 0%, var(--cyber-purple) 100%) !important;
+      border: none !important;
+      color: #fff !important;
+      font-weight: 700 !important;
+      letter-spacing: 1px !important;
+      border-radius: 6px !important;
+      box-shadow: var(--cyber-glow-blue) !important;
+      transition: all 0.3s ease !important;
+      text-transform: uppercase !important;
+    }
+
+    .cyber-btn:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 0 22px rgba(0, 242, 255, 0.55) !important;
+      filter: brightness(1.08) !important;
+    }
+
+    /* PASSWORD STRENGTH COMPONENT */
+    .strength-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05) !important;
+      border-radius: 3px !important;
+      overflow: hidden !important;
+    }
+
+    .strength-bar-fill {
+      height: 100% !important;
+      width: 0;
+      border-radius: 3px !important;
+      transition: all 0.4s ease !important;
+    }
+
+    .strength-weak {
+      width: 33% !important;
+      background: var(--cyber-red) !important;
+      box-shadow: 0 0 8px var(--cyber-red) !important;
+    }
+
+    .strength-medium {
+      width: 66% !important;
+      background: #ffaa00 !important;
+      box-shadow: 0 0 8px #ffaa00 !important;
+    }
+
+    .strength-strong {
+      width: 100% !important;
+      background: var(--cyber-blue) !important;
+      box-shadow: 0 0 8px var(--cyber-blue) !important;
+    }
+
+    .badge-strength-none {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      color: rgba(255, 255, 255, 0.6) !important;
+    }
+
+    .badge-strength-weak {
+      background: rgba(255, 0, 60, 0.15) !important;
+      border: 1px solid var(--cyber-red) !important;
+      color: var(--cyber-red) !important;
+    }
+
+    .badge-strength-medium {
+      background: rgba(255, 170, 0, 0.15) !important;
+      border: 1px solid #ffaa00 !important;
+      color: #ffaa00 !important;
+    }
+
+    .badge-strength-strong {
+      background: rgba(0, 242, 255, 0.15) !important;
+      border: 1px solid var(--cyber-blue) !important;
+      color: var(--cyber-blue) !important;
+    }
+
+    .strength-hints small {
+      font-size: 0.75rem !important;
+      transition: color 0.3s ease !important;
+    }
+
+    .strength-hints small.valid {
+      color: var(--cyber-green) !important;
+    }
+
+    .strength-hints small.valid i {
+      color: var(--cyber-green) !important;
+    }
+    </style>
+
+    <!-- JS TỰ CHẠY (Được SPA tự động chạy vì nằm bên trong main-content) -->
+    <script>
+    // PASSWORD STRENGTH ANALYZER
+    function analyzePasswordStrength(password) {
+      const bar = document.getElementById('strength-bar');
+      const label = document.getElementById('strength-label');
+      
+      const hLen = document.getElementById('hint-len');
+      const hNum = document.getElementById('hint-num');
+      const hSpec = document.getElementById('hint-spec');
+
+      const isLenValid = password.length >= 6;
+      const isNumValid = /[0-9]/.test(password);
+      const isSpecValid = /[^A-Za-z0-9]/.test(password);
+
+      toggleHintStyle(hLen, isLenValid);
+      toggleHintStyle(hNum, isNumValid);
+      toggleHintStyle(hSpec, isSpecValid);
+
+      let score = 0;
+      if (password.length > 0) {
+        if (isLenValid) score++;
+        if (isNumValid) score++;
+        if (isSpecValid) score++;
+      }
+
+      bar.className = 'strength-bar-fill';
+      label.className = 'badge-cyber';
+
+      if (score === 0) {
+        bar.style.width = '0%';
+        label.innerText = 'Chưa Nhập';
+        label.classList.add('badge-strength-none');
+      } else if (score === 1) {
+        bar.classList.add('strength-weak');
+        label.innerText = 'Yếu';
+        label.classList.add('badge-strength-weak');
+      } else if (score === 2) {
+        bar.classList.add('strength-medium');
+        label.innerText = 'Trung Bình';
+        label.classList.add('badge-strength-medium');
+      } else if (score === 3) {
+        bar.classList.add('strength-strong');
+        label.innerText = 'Mạnh';
+        label.classList.add('badge-strength-strong');
+      }
+    }
+
+    function toggleHintStyle(element, isValid) {
+      if (isValid) {
+        element.classList.add('valid');
+        element.classList.remove('text-muted-cyber');
+        element.querySelector('i').className = 'fas fa-check-circle me-1';
+      } else {
+        element.classList.remove('valid');
+        element.classList.add('text-muted-cyber');
+        element.querySelector('i').className = 'far fa-circle me-1';
+      }
+    }
+
+    // CHANGE PASSWORD HANDLER
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      
+      const oldPassword = document.getElementById('oldPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        showCyberAlert('Xác nhận mật khẩu mới không khớp!', 'error');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showCyberAlert('Mật khẩu mới tối thiểu 6 ký tự!', 'error');
+        return;
+      }
+
+      const payload = { oldPassword, newPassword };
+
+      try {
+        const res = await fetch('/profile/change-password', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          showCyberAlert('Đổi mật khẩu thành công!', 'success');
+          document.getElementById('passwordForm').reset();
+          analyzePasswordStrength('');
+        } else {
+          const errMsg = await res.text();
+          showCyberAlert(errMsg || 'Đổi mật khẩu thất bại!', 'error');
+        }
+      } catch (error) {
+        showCyberAlert('Lỗi kết nối máy chủ!', 'error');
+      }
+    }
+    </script>
+  </main>
+</div>
+
+<!-- Scripts (Giữ nguyên th:replace để truy cập trực tiếp trang không qua SPA) -->
+<div th:replace="~{common/scripts :: footer_scripts}"></div>
+
+</body>
+</html>

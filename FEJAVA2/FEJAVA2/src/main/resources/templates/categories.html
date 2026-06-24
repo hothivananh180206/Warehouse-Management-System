@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head th:replace="~{common/head :: head_info('Danh Mục - Hệ Thống Quản Lý Kho')}"></head>
+
+<body>
+<div id="vanta-canvas"></div>
+
+<div class="container-fluid p-0">
+    <nav th:replace="~{common/sidebar :: sidebar_menu('categories')}"></nav>
+
+    <main class="main-content">
+        <div th:replace="~{common/styles}"></div>
+        <div th:replace="~{common/page-header :: top_header('Quản Lý Danh Mục', 'Phân Loại Sản Phẩm')}"></div>
+
+        <div th:replace="~{common/action-bar :: crud_bar('Danh Mục', 'Tìm tên danh mục...')}"></div>
+
+        <div id="category-data-container">
+            <div th:replace="~{common/table-card :: ajax_data_grid(
+                ~{::table},
+                ~{common/pagination-par :: pagination_bar(${currentPage}, ${totalPages}, '/categories', 'category-data-container')}
+            )}">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th style="width: 10%;"><i class="fas fa-hashtag" style="margin-right: 8px;"></i>STT</th>
+                        <th><i class="fas fa-tags" style="margin-right: 8px;"></i>Tên Danh Mục</th>
+                        <th th:if="${session.ROLE == 'ADMIN'}" class="text-end" style="width: 20%;"><i class="fas fa-cogs" style="margin-right: 8px;"></i>Thao Tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c, iterStat : ${list}">
+                        <td th:text="${(currentPage * pageSize) + iterStat.count}" style="color: rgba(0, 242, 255, 0.7);"></td>
+                        <td>
+                            <span class="badge" style="background: rgba(112, 0, 255, 0.2); color: #b366ff; border: 1px solid rgba(112, 0, 255, 0.4); font-size: 0.95rem; padding: 8px 15px;" th:text="${c.name}"></span>
+                        </td>
+                        <td th:if="${session.ROLE == 'ADMIN'}" class="text-end">
+                            <button class="btn btn-sm btn-outline-info rounded-circle me-1"
+                                    style="width: 32px; height: 32px; padding: 0;"
+                                    th:data-id="${c.id}"
+                                    th:data-name="${c.name}"
+                                    onclick="openEditModal(this.dataset.id, this.dataset.name)">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger rounded-circle"
+                                    style="width: 32px; height: 32px; padding: 0;"
+                                    th:data-id="${c.id}"
+                                    th:data-name="${c.name}"
+                                    onclick="deleteCategory(this.dataset.id, this.dataset.name)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="modal fade" id="crudModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(10, 15, 20, 0.95); backdrop-filter: blur(20px); border: 1px solid #00f2ff; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 242, 255, 0.2);">
+                        <h5 class="modal-title" id="modalTitle" style="color: #00f2ff; font-weight: 600;"><i class="fas fa-plus-circle me-2"></i>Thêm Danh Mục</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="catId">
+                        <div class="mb-2">
+                            <label class="form-label" style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Tên danh mục (*)</label>
+                            <input type="text" id="catName" class="form-control border-cyber text-white" style="background: rgba(0,0,0,0.5); transition: all 0.3s;" placeholder="Ví dụ: Phụ kiện...">
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid rgba(0, 242, 255, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-success" onclick="saveCategory()"><i class="fas fa-save me-2"></i>Lưu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(15, 5, 5, 0.95); backdrop-filter: blur(20px); border: 1px solid #ff003c; box-shadow: 0 0 30px rgba(255, 0, 60, 0.2);">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(255, 0, 60, 0.2);">
+                        <h5 class="modal-title" style="color: #ff003c; font-weight: 600;"><i class="fas fa-exclamation-triangle me-2"></i>Cảnh Báo</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-trash-alt mb-3" style="font-size: 3rem; color: #ff003c; text-shadow: 0 0 15px rgba(255,0,60,0.6);"></i>
+                        <p style="color: #ffffff; font-size: 1rem;">Xóa danh mục này?</p>
+                        <h4 id="deleteTargetName" style="color: #ff003c; font-weight: bold;">---</h4>
+                        <input type="hidden" id="deleteTargetId">
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center" style="border-top: 1px solid rgba(255, 0, 60, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-danger" onclick="executeDelete()">Xóa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function resetCategoryModal() {
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Thêm Danh Mục';
+                document.getElementById('catId').value = '';
+                document.getElementById('catName').value = '';
+                if(typeof hideModalError === "function") hideModalError();
+            }
+
+            function resetModal() {
+                resetCategoryModal();
+            }
+
+            function openEditModal(id, name) {
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-pen me-2"></i>Sửa Danh Mục';
+                document.getElementById('catId').value = id;
+                document.getElementById('catName').value = name;
+                if(typeof hideModalError === "function") hideModalError();
+                new bootstrap.Modal(document.getElementById('crudModal')).show();
+            }
+
+            async function saveCategory() {
+                if(typeof hideModalError === "function") hideModalError();
+
+                const id = document.getElementById('catId').value;
+                const name = document.getElementById('catName').value.trim();
+
+                if (!name) {
+                    if(typeof showModalError === "function") showModalError("Vui lòng nhập tên danh mục!", "catName");
+                    return;
+                }
+
+                const payload = { id: id ? parseInt(id) : null, name: name };
+
+                try {
+                    const response = await fetch('/categories/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã lưu danh mục!");
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click(); else reloadTableData('category-data-container');
+                    } else {
+                        const errText = await response.text();
+                        if(typeof showModalError === "function") showModalError(errText, "catName");
+                    }
+                } catch (error) {
+                    if(typeof showModalError === "function") showModalError("Lỗi kết nối máy chủ!", "catName");
+                }
+            }
+
+            function deleteCategory(id, name) {
+                document.getElementById('deleteTargetId').value = id;
+                document.getElementById('deleteTargetName').innerText = name;
+                new bootstrap.Modal(document.getElementById('deleteModal')).show();
+            }
+
+            async function executeDelete() {
+                const id = document.getElementById('deleteTargetId').value;
+                try {
+                    const response = await fetch(`/categories/delete/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                        if(typeof showSuccessToast === "function") showSuccessToast("Đã xóa danh mục!");
+                        const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
+                        if (activePageBtn) activePageBtn.click(); else reloadTableData('category-data-container');
+                    } else {
+                        alert(await response.text());
+                    }
+                } catch (error) { console.error(error); }
+            }
+        </script>
+    </main>
+</div>
+
+<div th:replace="~{common/scripts :: footer_scripts}"></div>
+</body>
+</html>

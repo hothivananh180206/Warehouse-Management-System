@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head th:replace="~{common/head :: head_info('Nhập Kho - Hệ Thống Quản Lý Kho')}"></head>
+
+<body>
+<div id="vanta-canvas"></div>
+
+<div class="container-fluid p-0">
+    <nav th:replace="~{common/sidebar :: sidebar_menu('stock-in')}"></nav>
+
+    <main class="main-content">
+        <div th:replace="~{common/styles}"></div>
+        <div th:replace="~{common/page-header :: top_header('Quản Lý Nhập Kho', 'Lịch Sử Chứng Từ')}"></div>
+
+        <div th:replace="~{common/action-bar :: crud_bar('Phiếu Nhập', 'Tìm kiếm phiếu...')}"></div>
+
+        <div id="stock-in-data-container">
+            <div th:replace="~{common/table-card :: ajax_data_grid(
+                ~{::#main-table},
+                ~{common/pagination-par :: pagination_bar(${currentPage}, ${totalPages}, '/stock-in', 'stock-in-data-container')}
+            )}">
+                <table class="table" id="main-table">
+                    <thead>
+                    <tr>
+                        <th><i class="fas fa-hashtag me-2"></i>STT</th>
+                        <th><i class="fas fa-file-invoice me-2"></i>Mã Phiếu</th>
+                        <th><i class="fas fa-building me-2"></i>Nhà Cung Cấp</th>
+                        <th><i class="fas fa-user-edit me-2"></i>Người Lập</th>
+                        <th><i class="fas fa-user me-2"></i>Tài Khoản</th>
+                        <th><i class="fas fa-calendar-alt me-2"></i>Thời Gian</th>
+                        <th><i class="fas fa-info-circle me-2"></i>Trạng Thái</th>
+                        <th class="text-end"><i class="fas fa-cogs me-2"></i>Thao Tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="s, iterStat : ${list}">
+                        <td style="color: rgba(0, 242, 255, 0.7);" th:text="${(currentPage * pageSize) + iterStat.count}"></td>
+
+                        <td style="color: #00f2ff; font-weight: bold;">#PN-<span th:text="${s.id}"></span></td>
+
+                        <td style="color: #ffffff; font-weight: 500;"
+                            th:text="${supplierMap != null and supplierMap.containsKey(#strings.toString(s.supplierId)) ? supplierMap[#strings.toString(s.supplierId)] : 'NCC ID: ' + s.supplierId}">
+                        </td>
+
+                        <td style="color: #a0a0a0;"
+                            th:text="${userMap != null and userMap.containsKey(#strings.toString(s.userId)) ? userMap[#strings.toString(s.userId)] : 'Tài khoản đã xóa (ID: ' + s.userId + ')'}">
+                        </td>
+
+                        <td style="color: #00f2ff; font-weight: 500;"
+                            th:text="${usernameMap != null and usernameMap.containsKey(#strings.toString(s.userId)) ? usernameMap[#strings.toString(s.userId)] : '---'}">
+                        </td>
+
+                        <td style="color: #e0e0e0;"
+                            th:text="${s.createdAt != null ? #strings.substring(s.createdAt,8,10) + '/' + #strings.substring(s.createdAt,5,7) + '/' + #strings.substring(s.createdAt,0,4) + ' ' + #strings.substring(s.createdAt,11,16) : '---'}">
+                        </td>
+                        <td>
+                            <span th:if="${s.status == 'COMPLETED'}" class="badge bg-success"><i class="fas fa-check-double me-1"></i>ĐÃ DUYỆT</span>
+                            <span th:if="${s.status == 'PENDING'}" class="badge" style="background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid #ffaa00;"><i class="fas fa-clock me-1"></i>CHỜ DUYỆT</span>
+                            <span th:if="${s.status == 'CANCELLED'}" class="badge bg-danger"><i class="fas fa-ban me-1"></i>ĐÃ HỦY</span>
+                        </td>
+                        <td class="text-end">
+                            <button th:if="${s.status != 'PENDING' or session.ROLE == 'ADMIN'}"
+                                    class="btn btn-sm btn-outline-primary rounded-circle me-1"
+                                    style="width: 32px; height: 32px; padding: 0;" title="Xem chi tiết phiếu"
+                                    th:data-id="${s.id}" onclick="viewStockInDetails(this.dataset.id)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+
+                            <button th:if="${session.ROLE == 'ADMIN' and s.status == 'PENDING'}" class="btn btn-sm btn-outline-info rounded-circle me-1"
+                                    style="width: 32px; height: 32px; padding: 0;" title="Duyệt Phiếu & Nhập Kho"
+                                    th:data-id="${s.id}" onclick="showApproveModal(this, this.dataset.id)">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button th:if="${session.ROLE == 'ADMIN' and s.status == 'PENDING'}" class="btn btn-sm btn-outline-danger rounded-circle me-1"
+                                    style="width: 32px; height: 32px; padding: 0;" title="Hủy Phiếu"
+                                    th:data-id="${s.id}" onclick="showCancelModal(this, this.dataset.id)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="modal fade" id="crudModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-xl">
+                <div class="modal-content" style="background: rgba(10, 15, 20, 0.95); backdrop-filter: blur(20px); border: 1px solid #00f2ff;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 242, 255, 0.2);">
+                        <h5 class="modal-title" style="color: #00f2ff; font-weight: 600;">
+                            <i class="fas fa-truck-loading me-2"></i>Lập Phiếu Nhập Kho
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label" style="color: #00f2ff;">Nhà Cung Cấp (*)</label>
+                                <select id="supplierId" class="form-select border-cyber text-white" style="background: rgba(0,0,0,0.5);">
+                                    <option th:each="sup : ${suppliers}" th:value="${sup.id}" th:text="${'NCC: ' + sup.name + ' - ' + sup.phone}"></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4" style="background: rgba(0, 242, 255, 0.05); border: 1px dashed rgba(0, 242, 255, 0.3);">
+                            <div class="card-body">
+                                <h6 style="color: #ffaa00;"><i class="fas fa-cart-plus me-2"></i>Thêm mặt hàng</h6>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-5">
+                                        <label class="form-label text-white-50" style="font-size: 0.8rem;">Sản Phẩm</label>
+                                        <select id="itemProduct" class="form-select border-cyber text-white" style="background: #050505;" onchange="autoFillInPrice()">
+                                            <option value="">-- Chọn sản phẩm --</option>
+                                            <option th:each="p : ${products}" th:value="${p.id}" th:data-price="${p.importPrice}" th:text="${p.name}"></option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label text-white-50" style="font-size: 0.8rem;">Số lượng</label>
+                                        <input type="number" id="itemQty" class="form-control border-cyber text-white" style="background: #050505;" min="1" value="1">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-white-50" style="font-size: 0.8rem;">Giá nhập / SP (VNĐ)</label>
+                                        <input type="number" id="itemPrice" class="form-control border-cyber text-white" style="background: #050505;" min="0" value="0">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn btn-cyber btn-cyber-outline w-100" onclick="addItemToList()"><i class="fas fa-plus"></i> Thêm</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 style="color: #00f2ff;"><i class="fas fa-list me-2"></i>Danh sách mặt hàng chuẩn bị nhập</h6>
+                        <table class="table table-sm mt-2">
+                            <thead>
+                            <tr>
+                                <th style="color: rgba(255,255,255,0.7);">Sản Phẩm</th>
+                                <th style="color: rgba(255,255,255,0.7);">Số lượng</th>
+                                <th style="color: rgba(255,255,255,0.7);">Đơn giá</th>
+                                <th style="color: rgba(255,255,255,0.7);">Thành tiền</th>
+                                <th style="color: rgba(255,255,255,0.7);">Xóa</th>
+                            </tr>
+                            </thead>
+                            <tbody id="itemsTableBody">
+                            </tbody>
+                        </table>
+                        <h5 class="text-end mt-3" style="color: #ffaa00;">Tổng tiền: <span id="totalAmount">0</span> đ</h5>
+                    </div>
+
+                    <div class="modal-footer" style="border-top: 1px solid rgba(0, 242, 255, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-success" onclick="saveStockIn()">
+                            <i class="fas fa-save me-2"></i>Tạo Phiếu Nhập
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="detailStockInModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content" style="background: rgba(5, 10, 20, 0.95); backdrop-filter: blur(20px); border: 1px solid #0066ff;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 102, 255, 0.3);">
+                        <h5 class="modal-title" style="color: #0088ff; font-weight: 600;">
+                            <i class="fas fa-search me-2"></i>Chi Tiết Phiếu Nhập <span id="detailIdDisplay" style="color: #fff;"></span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-sm mt-2" style="border-color: rgba(0, 102, 255, 0.2);">
+                            <thead>
+                            <tr>
+                                <th style="color: rgba(255,255,255,0.7);">Sản Phẩm</th>
+                                <th style="color: rgba(255,255,255,0.7);">Số lượng</th>
+                                <th style="color: rgba(255,255,255,0.7);">Đơn giá</th>
+                                <th style="color: rgba(255,255,255,0.7);">Thành tiền</th>
+                            </tr>
+                            </thead>
+                            <tbody id="detailItemsBody">
+                            </tbody>
+                        </table>
+                        <h4 class="text-end mt-4" style="color: #00ffaa; font-weight: bold; text-shadow: 0 0 10px rgba(0,255,170,0.3);">
+                            TỔNG CỘNG: <span id="detailTotalAmount">0</span> đ
+                        </h4>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid rgba(0, 102, 255, 0.3);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="approveStockInModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(5, 15, 25, 0.95); border: 1px solid #00f2ff;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 242, 255, 0.2);">
+                        <h5 class="modal-title" style="color: #00f2ff; font-weight: 600;"><i class="fas fa-check-double me-2"></i>Duyệt Phiếu</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-check-circle mb-3" style="font-size: 3rem; color: #00f2ff;"></i>
+                        <p style="color: #ffffff;">Xác nhận duyệt và cộng tồn kho:</p>
+                        <h4 id="approveStockTargetName" style="color: #00f2ff; font-weight: bold;">---</h4>
+                        <input type="hidden" id="approveStockTargetId">
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center" style="border-top: 1px solid rgba(0, 242, 255, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-info" style="background: rgba(0, 242, 255, 0.2); color: #00f2ff; border: 1px solid #00f2ff;" onclick="executeApproveStock()"><i class="fas fa-check me-2"></i>Duyệt Ngay</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="cancelStockInModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content" style="background: rgba(15, 5, 5, 0.95); border: 1px solid #ff003c;">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(255, 0, 60, 0.2);">
+                        <h5 class="modal-title" style="color: #ff003c; font-weight: 600;"><i class="fas fa-exclamation-triangle me-2"></i>Cảnh Báo</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-ban mb-3" style="font-size: 3rem; color: #ff003c;"></i>
+                        <p style="color: #ffffff;">Xác nhận hủy bỏ phiếu nhập:</p>
+                        <h4 id="cancelStockTargetName" style="color: #ff003c; font-weight: bold;">---</h4>
+                        <input type="hidden" id="cancelStockTargetId">
+                        <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem; font-style: italic;">* Hành động này không thể hoàn tác.</p>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-center" style="border-top: 1px solid rgba(255, 0, 60, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-danger" onclick="executeCancelStock()"><i class="fas fa-times me-2"></i>Hủy Phiếu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cyberpunk Export Excel Configuration Modal -->
+        <div class="modal fade" id="exportExcelModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-md">
+                <div class="modal-content" style="background: rgba(10, 15, 20, 0.95); backdrop-filter: blur(20px); border: 1px solid #00f2ff; box-shadow: 0 0 20px rgba(0, 242, 255, 0.25);">
+                    <div class="modal-header" style="border-bottom: 1px solid rgba(0, 242, 255, 0.2);">
+                        <h5 class="modal-title" style="color: #00f2ff; font-weight: 600;">
+                            <i class="fas fa-file-export me-2"></i>CẤU HÌNH XUẤT FILE EXCEL
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="p-3 mb-3 text-center" style="background: rgba(0, 242, 255, 0.05); border: 1px dashed rgba(0, 242, 255, 0.3); border-radius: 8px;">
+                            <i class="fas fa-database me-2 text-info"></i>
+                            <span style="color: rgba(255, 255, 255, 0.85); font-size: 0.9rem;">
+                                Vui lòng chọn khoảng thời gian và trạng thái tài liệu để tối ưu hóa tệp dữ liệu xuất ra.
+                            </span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label" style="color: #00f2ff; font-size: 0.85rem; font-weight: bold; text-transform: uppercase;">Từ ngày (*)</label>
+                                <div class="cyber-search-group">
+                                    <input type="date" id="exportStartDate" class="form-control border-cyber text-white" style="background: rgba(0, 0, 0, 0.6); padding-left: 12px;">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" style="color: #00f2ff; font-size: 0.85rem; font-weight: bold; text-transform: uppercase;">Đến ngày (*)</label>
+                                <div class="cyber-search-group">
+                                    <input type="date" id="exportEndDate" class="form-control border-cyber text-white" style="background: rgba(0, 0, 0, 0.6); padding-left: 12px;">
+                                </div>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <label class="form-label" style="color: #00f2ff; font-size: 0.85rem; font-weight: bold; text-transform: uppercase;">Trạng thái chứng từ</label>
+                                <select id="exportStatus" class="form-select border-cyber text-white" style="background: rgba(0,0,0,0.6);">
+                                    <option value="ALL">Tất Cả Trạng Thái</option>
+                                    <option value="COMPLETED">Đã Duyệt (COMPLETED)</option>
+                                    <option value="PENDING">Chờ Duyệt (PENDING)</option>
+                                    <option value="CANCELLED">Đã Hủy (CANCELLED)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer" style="border-top: 1px solid rgba(0, 242, 255, 0.2);">
+                        <button type="button" class="btn btn-cyber btn-cyber-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="button" class="btn btn-cyber btn-cyber-info" id="btnConfirmExport" onclick="executeExcelExport()">
+                            <i class="fas fa-file-export me-2"></i>Xác Nhận Xuất
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="pendingStockOffcanvas" style="background: rgba(10, 15, 20, 0.98); backdrop-filter: blur(20px); border-left: 1px solid #ffaa00; width: 450px;">
+            <div class="offcanvas-header" style="border-bottom: 1px solid rgba(255, 170, 0, 0.2);">
+                <h5 class="offcanvas-title" style="color: #ffaa00; font-weight: 600;">
+                    <i class="fas fa-file-signature me-2"></i>Phiếu Nhập Chờ Duyệt
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body">
+                <div id="pendingStockContainer"></div>
+                <div id="noPendingStockMsg" class="text-center mt-5" style="display: none; color: rgba(255,255,255,0.5);">
+                    <i class="fas fa-check-circle mb-3" style="font-size: 3.5rem; color: #00ffaa; text-shadow: 0 0 20px #00ffaa;"></i>
+                    <p>Mọi thứ đã gọn gàng!<br>Không có phiếu nào đang chờ duyệt.</p>
+                </div>
+            </div>
+        </div>
+
+        <script th:inline="javascript">
+            var userRole = /*[[${session.ROLE}]]*/ 'STAFF';
+            // ================== LOGIC FORM LẬP PHIẾU NHẬP ==================
+            var stockInItems = [];
+
+            // 🌟 Hàm Tự Động Điền Giá Nhập (Đã fix lỗi số khoa học 1.3E7)
+            function autoFillInPrice() {
+                const prodSelect = document.getElementById('itemProduct');
+                if (!prodSelect || prodSelect.selectedIndex <= 0) return;
+
+                const selectedOption = prodSelect.options[prodSelect.selectedIndex];
+                // Dùng parseFloat để dịch 1.3E7 thành 13000000
+                const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+
+                const priceInput = document.getElementById('itemPrice');
+                if (priceInput) priceInput.value = price;
+            }
+
+            function resetStockInModal() {
+                stockInItems = [];
+                const prodSelect = document.getElementById('itemProduct');
+                const qtyInput = document.getElementById('itemQty');
+                const priceInput = document.getElementById('itemPrice');
+                if (prodSelect) prodSelect.value = "";
+                if (qtyInput) qtyInput.value = "1";
+                if (priceInput) priceInput.value = "0";
+                renderItemsTable();
+            }
+
+            function resetModal() {
+                resetStockInModal();
+            }
+
+            function addItemToList() {
+                const prodSelect = document.getElementById('itemProduct');
+                const productId = prodSelect.value;
+                const productName = prodSelect.options[prodSelect.selectedIndex].text;
+                const quantity = parseInt(document.getElementById('itemQty').value);
+                const price = parseFloat(document.getElementById('itemPrice').value);
+
+                if (!productId) { showCyberAlert("Vui lòng chọn sản phẩm trước khi thêm!", "warning"); return; }
+                if (quantity <= 0) { showCyberAlert("Số lượng phải lớn hơn 0!", "warning"); return; }
+
+                const existingItem = stockInItems.find(i => i.productId == productId);
+                if (existingItem) {
+                    existingItem.quantity += quantity;
+                    existingItem.price = price;
+                } else {
+                    stockInItems.push({ productId, productName, quantity, price });
+                }
+
+                renderItemsTable();
+
+                document.getElementById('itemProduct').value = "";
+                document.getElementById('itemQty').value = "1";
+                document.getElementById('itemPrice').value = "0";
+            }
+
+            function renderItemsTable() {
+                const tbody = document.getElementById('itemsTableBody');
+                tbody.innerHTML = '';
+                let total = 0;
+
+                stockInItems.forEach((item, index) => {
+                    const lineTotal = item.quantity * item.price;
+                    total += lineTotal;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="color: #fff;">${item.productName}</td>
+                            <td style="color: #00f2ff;">${item.quantity}</td>
+                            <td style="color: #ffaa00;">${item.price.toLocaleString('vi-VN')}</td>
+                            <td style="color: #00ffaa;">${lineTotal.toLocaleString('vi-VN')}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" onclick="removeItem(${index})"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('totalAmount').innerText = total.toLocaleString('vi-VN');
+            }
+
+            function removeItem(index) {
+                stockInItems.splice(index, 1);
+                renderItemsTable();
+            }
+
+            // TẠO PHIẾU VÀ CẬP NHẬT GIAO DIỆN KHÔNG GIẬT TRANG
+            async function saveStockIn() {
+                if (stockInItems.length === 0) { showCyberAlert("Phiếu nhập chưa có mặt hàng nào!", "warning"); return; }
+
+                const supplierSelect = document.getElementById('supplierId');
+                const itemsToSend = stockInItems.map(item => ({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    price: item.price
+                }));
+                const payload = {
+                    supplierId: supplierSelect ? parseInt(supplierSelect.value) : null,
+                    items: itemsToSend
+                };
+
+                try {
+                    const response = await fetch('/stock-in/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const myModalEl = document.getElementById('crudModal');
+                        if (myModalEl) {
+                            const modalInstance = bootstrap.Modal.getInstance(myModalEl);
+                            if (modalInstance) modalInstance.hide();
+                            else {
+                                const closeBtn = document.querySelector('#crudModal .btn-close');
+                                if (closeBtn) closeBtn.click();
+                            }
+                        }
+
+                        showCyberAlert("Đã tạo phiếu nhập thành công!", "success");
+                        resetStockInModal();
+
+                        // 🌟 Chiêu thức tối thượng: reloadTableData cực kỳ an toàn
+                        reloadTableData('stock-in-data-container');
+
+                    } else {
+                        showCyberAlert("Lỗi từ hệ thống: " + await response.text(), "error");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    showCyberAlert("Có lỗi xử lý giao diện, đang làm mới trang!", "error");
+                    setTimeout(() => window.location.reload(), 1500);
+                }
+            }
+
+
+            // ================== LOGIC XEM CHI TIẾT (MẮT THẦN + TỪ ĐIỂN DỊCH ID) ==================
+            async function viewStockInDetails(id) {
+                const productDictionary = {};
+                document.querySelectorAll('#itemProduct option').forEach(opt => {
+                    if (opt.value) productDictionary[opt.value] = opt.text;
+                });
+
+                const modalEl = document.getElementById('detailStockInModal');
+                if (!modalEl) return;
+                new bootstrap.Modal(modalEl).show();
+                
+                const idDisplay = document.getElementById('detailIdDisplay');
+                if (idDisplay) idDisplay.innerText = '#PN-' + id;
+                
+                const tbody = document.getElementById('detailItemsBody');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color: #0088ff;"><i class="fas fa-circle-notch fa-spin me-2" style="font-size: 1.5rem;"></i> Đang giải mã dữ liệu...</td></tr>';
+                
+                const totalAmountEl = document.getElementById('detailTotalAmount');
+                if (totalAmountEl) totalAmountEl.innerText = '0';
+
+                try {
+                    const response = await fetch(`/stock-in/detail/${id}`);
+                    if (response.ok) {
+                        const receipt = await response.json();
+                        const items = receipt.items || receipt.stockInItems || receipt.details || [];
+                        // 🌟 Nhận trực tiếp tổng tiền của phiếu nhập kho đã được Backend tính sẵn để hiển thị ngay lập tức
+                        const total = receipt.totalAmount || 0;
+                        let tbodyHtml = '';
+
+                        if (items.length === 0) {
+                            tbodyHtml = '<tr><td colspan="4" class="text-center text-muted">Phiếu này rỗng!</td></tr>';
+                        } else {
+                            items.forEach(item => {
+                                const prodName = productDictionary[item.productId] || ('SP ID: ' + item.productId);
+                                const qty = item.quantity || 0;
+                                const price = item.price || 0;
+                                const lineTotal = qty * price;
+
+                                tbodyHtml += `
+                                    <tr>
+                                        <td style="color: #fff;">${prodName}</td>
+                                        <td style="color: #00f2ff; font-weight: bold;">${qty}</td>
+                                        <td style="color: #ffaa00;">${price.toLocaleString('vi-VN')}</td>
+                                        <td style="color: #00ffaa;">${lineTotal.toLocaleString('vi-VN')}</td>
+                                    </tr>
+                                `;
+                            });
+                        }
+                        tbody.innerHTML = tbodyHtml;
+                        // 🌟 Gán giá trị tổng tiền đã format bằng tiền tệ vi-VN
+                        if (totalAmountEl) totalAmountEl.innerText = total.toLocaleString('vi-VN');
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Lỗi: ${await response.text()}</td></tr>`;
+                    }
+                } catch (error) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Mất kết nối máy chủ!</td></tr>';
+                }
+            }
+
+
+            // ================== LOGIC OFFCANVAS (MỞ DANH SÁCH CHỜ DUYỆT) ==================
+            async function openPendingStockInPanel() {
+                const container = document.getElementById('pendingStockContainer');
+                const noMsg = document.getElementById('noPendingStockMsg');
+                if (!container || !noMsg) return;
+
+                container.innerHTML = `
+                    <div class="text-center mt-5">
+                        <div class="spinner-border text-warning" style="width: 3rem; height: 3rem;" role="status"></div>
+                        <p class="mt-3" style="color: #ffaa00;">Đang quét kho dữ liệu...</p>
+                    </div>`;
+                noMsg.style.display = 'none';
+                
+                const offcanvasEl = document.getElementById('pendingStockOffcanvas');
+                if (offcanvasEl) new bootstrap.Offcanvas(offcanvasEl).show();
+
+                try {
+                    const response = await fetch('/stock-in/pending');
+                    if (response.ok) {
+                        const pendingList = await response.json();
+                        container.innerHTML = '';
+
+                        if (pendingList.length > 0) {
+                            pendingList.forEach(s => {
+                                const card = document.createElement('div');
+                                card.className = 'card mb-3';
+                                card.style = 'background: rgba(0,0,0,0.4); border: 1px solid rgba(255,170,0,0.3); border-radius: 12px; transition: all 0.3s;';
+                                card.innerHTML = `
+                                    <div class="card-body d-flex justify-content-between align-items-center p-3">
+                                        <div>
+                                            <h6 style="color: #00f2ff; margin:0; font-weight:bold;"><i class="fas fa-file-invoice me-2"></i>#PN-${s.id}</h6>
+                                            <small style="color: rgba(255,255,255,0.6);">${s.createdAt ? s.createdAt.substring(0,10) : '---'}</small>
+                                        </div>
+                                        <div class="text-end pending-actions">
+                                            <button class="btn btn-sm btn-outline-primary rounded-circle me-1"
+                                                    style="width: 32px; height: 32px; padding: 0;" title="Xem chi tiết"
+                                                    onclick="viewStockInDetails('${s.id}')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            ${userRole === 'ADMIN' ? `
+                                            <button class="btn btn-sm btn-outline-info rounded-circle me-1"
+                                                    style="width: 32px; height: 32px; padding: 0;" title="Duyệt phiếu"
+                                                    onclick="showApproveModal(this, '${s.id}')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger rounded-circle"
+                                                    style="width: 32px; height: 32px; padding: 0;" title="Hủy phiếu"
+                                                    onclick="showCancelModal(this, '${s.id}')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                                container.appendChild(card);
+                            });
+                        } else {
+                            noMsg.style.display = 'block';
+                        }
+                    } else {
+                        container.innerHTML = `<p class="text-center mt-5" style="color: #ff0032;">Lỗi kết nối</p>`;
+                    }
+                } catch (error) {
+                    container.innerHTML = `<p class="text-center mt-5" style="color: #ff0032;">Mất kết nối máy chủ!</p>`;
+                }
+            }
+
+
+            // ================== LOGIC DUYỆT / HỦY PHIẾU BẰNG ĐỒNG BỘ ==================
+            var currentActionBtn = null;
+
+            function showApproveModal(btnElement, id) {
+                currentActionBtn = btnElement;
+                const targetIdEl = document.getElementById('approveStockTargetId');
+                const targetNameEl = document.getElementById('approveStockTargetName');
+                if (targetIdEl) targetIdEl.value = id;
+                if (targetNameEl) targetNameEl.innerText = '#PN-' + id;
+                
+                const modalEl = document.getElementById('approveStockInModal');
+                if (modalEl) new bootstrap.Modal(modalEl).show();
+            }
+
+            async function executeApproveStock() {
+                const targetIdEl = document.getElementById('approveStockTargetId');
+                if (!targetIdEl) return;
+                const id = targetIdEl.value;
+                try {
+                    const response = await fetch(`/stock-in/status/${id}?status=COMPLETED`, { method: 'PUT' });
+                    if (response.ok) {
+                        const approveModalEl = document.getElementById('approveStockInModal');
+                        if (approveModalEl) {
+                            const approveInstance = bootstrap.Modal.getInstance(approveModalEl);
+                            if (approveInstance) approveInstance.hide();
+                        }
+                        showCyberAlert("Đã duyệt phiếu thành công!", "success");
+
+                        // 🌟 Chiêu thức tối thượng
+                        reloadTableData('stock-in-data-container');
+
+                        const offcanvasEl = document.getElementById('pendingStockOffcanvas');
+                        if (offcanvasEl && offcanvasEl.classList.contains('show')) openPendingStockInPanel();
+
+                    } else {
+                        showCyberAlert("Lỗi: " + await response.text(), "error");
+                    }
+                } catch (error) { showCyberAlert("Lỗi kết nối máy chủ!", "error"); }
+            }
+
+            function showCancelModal(btnElement, id) {
+                currentActionBtn = btnElement;
+                const targetIdEl = document.getElementById('cancelStockTargetId');
+                const targetNameEl = document.getElementById('cancelStockTargetName');
+                if (targetIdEl) targetIdEl.value = id;
+                if (targetNameEl) targetNameEl.innerText = '#PN-' + id;
+                
+                const modalEl = document.getElementById('cancelStockInModal');
+                if (modalEl) new bootstrap.Modal(modalEl).show();
+            }
+
+            async function executeCancelStock() {
+                const targetIdEl = document.getElementById('cancelStockTargetId');
+                if (!targetIdEl) return;
+                const id = targetIdEl.value;
+                try {
+                    const response = await fetch(`/stock-in/status/${id}?status=CANCELLED`, { method: 'PUT' });
+                    if (response.ok) {
+                        const cancelModalEl = document.getElementById('cancelStockInModal');
+                        if (cancelModalEl) {
+                            const cancelInstance = bootstrap.Modal.getInstance(cancelModalEl);
+                            if (cancelInstance) cancelInstance.hide();
+                        }
+                        showCyberAlert("Đã hủy phiếu nhập!", "success");
+
+                        // 🌟 Chiêu thức tối thượng
+                        reloadTableData('stock-in-data-container');
+
+                        const offcanvasEl = document.getElementById('pendingStockOffcanvas');
+                        if (offcanvasEl && offcanvasEl.classList.contains('show')) openPendingStockInPanel();
+
+                    } else {
+                        showCyberAlert("Lỗi: " + await response.text(), "error");
+                    }
+                } catch (error) { 
+                    showCyberAlert("Lỗi kết nối máy chủ!", "error"); 
+                }
+            }
+
+
+            // ================== LOGIC XUẤT EXCEL THEO KHOẢNG NGÀY CHUYÊN NGHIỆP ==================
+            var exportExcelModal = document.getElementById('exportExcelModal');
+            if (exportExcelModal) {
+                exportExcelModal.addEventListener('show.bs.modal', function () {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    
+                    document.getElementById('exportEndDate').value = `${year}-${month}-${day}`;
+                    document.getElementById('exportStartDate').value = `${year}-${month}-01`;
+                    
+                    const btn = document.getElementById('btnConfirmExport');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-file-export me-2"></i>Xác Nhận Xuất';
+                    }
+                });
+            }
+
+            async function executeExcelExport() {
+                const startDate = document.getElementById('exportStartDate').value;
+                const endDate = document.getElementById('exportEndDate').value;
+                const status = document.getElementById('exportStatus').value;
+
+                if (!startDate || !endDate) {
+                    showCyberAlert("Vui lòng chọn đầy đủ khoảng ngày!", "warning");
+                    return;
+                }
+
+                if (new Date(startDate) > new Date(endDate)) {
+                    showCyberAlert("Ngày bắt đầu không được lớn hơn ngày kết thúc!", "warning");
+                    return;
+                }
+
+                const btn = document.getElementById('btnConfirmExport');
+                const originalHtml = btn.innerHTML;
+                
+                // Hiệu ứng Spinner Neon xoay nhấp nháy
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Đang khởi tạo...';
+
+                try {
+                    const downloadUrl = `/api/export/stock-in?startDate=${startDate}&endDate=${endDate}&status=${status}`;
+                    
+                    // Giả lập 800ms chờ đợi Cyberpunk xử lý
+                    setTimeout(() => {
+                        window.location.href = downloadUrl;
+                        
+                        const modalEl = document.getElementById('exportExcelModal');
+                        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        if (modalInstance) modalInstance.hide();
+                        
+                        showCyberAlert("Báo cáo Excel đang được tải xuống!", "success");
+                    }, 800);
+
+                } catch (error) {
+                    showCyberAlert("Lỗi tải xuống báo cáo!", "error");
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            }
+        </script>
+    </main>
+</div>
+<div th:replace="~{common/scripts :: footer_scripts}"></div>
+</body>
+</html>
