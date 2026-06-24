@@ -22,7 +22,7 @@ public class CustomerService {
     private RestTemplate restTemplate;
 
     // Phải khớp với URL và cổng (Port 8080) chạy Backend của bạn
-    private final String API_URL = "http://localhost:8080/customers";
+    private final String API_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/customers";
 
     public CustomerPageResponse getCustomersWithPagination(String token, String keyword, int page, int size, String sort) {
 

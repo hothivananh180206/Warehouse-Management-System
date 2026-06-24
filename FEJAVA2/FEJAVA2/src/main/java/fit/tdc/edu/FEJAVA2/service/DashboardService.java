@@ -11,7 +11,7 @@ public class DashboardService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String BASE_URL = "http://localhost:8080/api/dashboard";
+    private final String BASE_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/api/dashboard";
 
     public DashboardStats getStats(String token) {
         try {

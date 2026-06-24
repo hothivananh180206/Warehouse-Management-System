@@ -17,7 +17,7 @@ public class AuditLogService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String API_URL = "http://localhost:8080/api/audit-logs";
+    private final String API_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/api/audit-logs";
 
     public AuditLogPageResponse getAuditLogs(String token, String keyword, String actionType, String startDate, String endDate, int page, int size) {
         Map<String, Object> params = new HashMap<>();

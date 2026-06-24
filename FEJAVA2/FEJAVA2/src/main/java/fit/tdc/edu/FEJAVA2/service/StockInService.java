@@ -17,7 +17,7 @@ public class StockInService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String API_IN_URL = "http://localhost:8080/stock-in";
+    private final String API_IN_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/stock-in";
 
     // 1. Lấy danh sách phiếu nhập
     public List<Map<String, Object>> getAllStockIns(String token) {
@@ -57,7 +57,7 @@ public class StockInService {
         headers.set("Authorization", "Bearer " + token);
 
         // Gọi sang Backend chính ở cổng 8080
-        return restTemplate.exchange("http://localhost:8080/stock-in/" + id,
+        return restTemplate.exchange((System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/stock-in/" + id,
                 org.springframework.http.HttpMethod.GET,
                 new org.springframework.http.HttpEntity<>(headers),
                 String.class);
@@ -69,7 +69,7 @@ public class StockInService {
         Map<String, Object> params = new HashMap<>();
         params.put("page", page); params.put("size", size); params.put("sort", sort);
 
-        String url = "http://localhost:8080/stock-in/page?page={page}&size={size}&sort={sort}";
+        String url = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/stock-in/page?page={page}&size={size}&sort={sort}";
         if (keyword != null && !keyword.trim().isEmpty()) {
             url += "&keyword={keyword}";
             params.put("keyword", keyword);
@@ -88,7 +88,7 @@ public class StockInService {
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
         headers.set("Authorization", "Bearer " + token);
         org.springframework.http.ResponseEntity<StockInDTO[]> response = restTemplate.exchange(
-                "http://localhost:8080/stock-in/pending",
+                (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/stock-in/pending",
                 org.springframework.http.HttpMethod.GET,
                 new org.springframework.http.HttpEntity<>(headers),
                 StockInDTO[].class);

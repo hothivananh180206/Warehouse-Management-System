@@ -13,7 +13,7 @@ public class AuthService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String BASE_URL = "http://localhost:8080/api/auth";
+    private final String BASE_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/api/auth";
 
     public String login(LoginRequest loginRequest) {
         ResponseEntity<String> response = restTemplate.postForEntity(

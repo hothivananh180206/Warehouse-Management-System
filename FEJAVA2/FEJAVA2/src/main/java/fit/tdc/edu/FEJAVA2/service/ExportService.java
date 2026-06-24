@@ -13,7 +13,7 @@ public class ExportService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String BACKEND_EXPORT_URL = "http://localhost:8080/api/export";
+    private final String BACKEND_EXPORT_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/api/export";
 
     public ResponseEntity<byte[]> exportStockIn(String token, LocalDate startDate, LocalDate endDate, String status) {
         HttpHeaders headers = new HttpHeaders();

@@ -25,7 +25,7 @@ public class ProductService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String API_URL = "http://localhost:8080/products";
+    private final String API_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/products";
 
     public List<Product> getAllProducts(String token) {
         HttpHeaders headers = new HttpHeaders();

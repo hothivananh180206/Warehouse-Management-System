@@ -16,7 +16,7 @@ public class UserService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String API_URL = "http://localhost:8080/users";
+    private final String API_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/users";
 
     public Map<String, Object> getUsersWithPagination(String token, String keyword, int page, int size, String sort) {
         Map<String, Object> params = new HashMap<>();

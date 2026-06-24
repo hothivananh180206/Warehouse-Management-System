@@ -18,7 +18,7 @@ public class CategoryService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String API_URL = "http://localhost:8080/categories";
+    private final String API_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/categories";
 
     // 🌟 HÀM ĐƯỢC BỔ SUNG: Dùng để ProductController gọi lấy dữ liệu đổ vào Dropdown
     public List<Category> getAllCategories(String token) {

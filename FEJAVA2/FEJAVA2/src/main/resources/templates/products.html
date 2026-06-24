@@ -44,7 +44,7 @@
                                  <i class="fas fa-image" style="color: rgba(255,255,255,0.2); font-size: 1.2rem;"></i>
                             </div>
                              <img th:if="${p.imagePath != null && !p.imagePath.isEmpty()}" 
-                                  th:src="'http://localhost:8080/uploads/' + ${p.imagePath}" 
+                                  th:src="${@environment.getProperty('API_BASE_URL', 'http://localhost:8080')} + '/uploads/' + ${p.imagePath}" 
                                   style="width: 45px; height: 45px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(0, 242, 255, 0.3); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); cursor: pointer; transition: all 0.2s;" 
                                   onclick="showLightbox(this.src)"
                                   class="product-thumb" />
@@ -255,7 +255,8 @@
                         fileNameDisplay.innerText = (currentImage && currentImage !== 'null') ? currentImage : 'Chưa chọn tệp...';
                     }
                     if (currentImage) {
-                        preview.src = 'http://localhost:8080/uploads/' + currentImage;
+                        const API_BASE_URL = '[[${@environment.getProperty('API_BASE_URL', 'http://localhost:8080')}]]';
+                        preview.src = API_BASE_URL + '/uploads/' + currentImage;
                         preview.style.display = 'block';
                     } else {
                         preview.src = '';
@@ -316,7 +317,8 @@
                 
                 const preview = document.getElementById('imagePreview');
                 if (imagePath && imagePath !== 'null' && imagePath !== 'undefined' && imagePath.trim() !== '') {
-                    preview.src = 'http://localhost:8080/uploads/' + imagePath;
+                    const API_BASE_URL = '[[${@environment.getProperty('API_BASE_URL', 'http://localhost:8080')}]]';
+                    preview.src = API_BASE_URL + '/uploads/' + imagePath;
                     preview.style.display = 'block';
                     preview.dataset.currentImage = imagePath;
                 } else {

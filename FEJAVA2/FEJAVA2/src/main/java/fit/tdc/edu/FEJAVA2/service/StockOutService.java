@@ -17,7 +17,7 @@ public class StockOutService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private final String API_OUT_URL = "http://localhost:8080/stock-out";
+    private final String API_OUT_URL = (System.getenv("API_BASE_URL") != null ? System.getenv("API_BASE_URL") : "http://localhost:8080") + "/stock-out";
 
     // Kéo dữ liệu phân trang chuẩn DTO
     public StockOutPageResponse getStockOutsWithPagination(String token, String keyword, int page, int size, String sort) {
