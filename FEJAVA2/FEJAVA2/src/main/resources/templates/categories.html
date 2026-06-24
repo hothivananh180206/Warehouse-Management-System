@@ -140,7 +140,9 @@
                     });
 
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('crudModal')).hide();
+                        const modalObj = bootstrap.Modal.getInstance(document.getElementById('crudModal'));
+                        if (modalObj) modalObj.hide();
+                        else document.getElementById('crudModal').classList.remove('show');
                         if(typeof showSuccessToast === "function") showSuccessToast("Đã lưu danh mục!");
                         const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
                         if (activePageBtn) activePageBtn.click(); else reloadTableData('category-data-container');
@@ -164,7 +166,9 @@
                 try {
                     const response = await fetch(`/categories/delete/${id}`, { method: 'DELETE' });
                     if (response.ok) {
-                        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                        const modalObj = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                        if (modalObj) modalObj.hide();
+                        else document.getElementById('deleteModal').classList.remove('show');
                         if(typeof showSuccessToast === "function") showSuccessToast("Đã xóa danh mục!");
                         const activePageBtn = document.querySelector('.page-item.active .ajax-page-link');
                         if (activePageBtn) activePageBtn.click(); else reloadTableData('category-data-container');
