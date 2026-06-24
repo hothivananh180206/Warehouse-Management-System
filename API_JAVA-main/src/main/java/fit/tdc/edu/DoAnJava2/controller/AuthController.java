@@ -54,7 +54,7 @@ public class AuthController {
         user.setPhone(user.getPhone().trim());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole("STAFF");
-        user.setStatus("PENDING"); // 🌟 Ép trạng thái thành PENDING chờ duyệt
+        user.setStatus("ACTIVE"); // Sửa thành ACTIVE để demo không cần duyệt
 
         userRepository.save(user); // Lưu vào Database
 
